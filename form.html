@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Input Data Google Sheet</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Display', sans-serif;
+    min-height: 100vh;
+    background: radial-gradient(circle at top right, #f0f4ff 0%, #fafafa 50%, #f5f5f5 100%);
+    padding: 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .container {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    max-width: 600px;
+    width: 100%;
+    animation: fadeIn 0.5s ease;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  h3 {
+    font-size: 26px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 32px;
+    letter-spacing: -0.5px;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 8px;
+    color: #374151;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.2px;
+  }
+  
+  input, select {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #1f2937;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  
+  input:hover, select:hover {
+    border-color: #d1d5db;
+  }
+  
+  input:focus, select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .warning {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: -15px;
+    margin-bottom: 15px;
+    display: none;
+    font-weight: 500;
+    animation: shake 0.3s ease;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  
+  .info-box {
+    background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #1e40af;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .preview-box {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-left: 4px solid #10b981;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #065f46;
+    font-weight: 500;
+    animation: slideIn 0.3s ease;
+  }
+  
+  .preview-box strong {
+    display: block;
+    margin-top: 6px;
+    color: #047857;
+    font-size: 15px;
+  }
+  
+  button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 14px 30px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    letter-spacing: -0.2px;
+  }
+  
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+  
+  button:active {
+    transform: translateY(0);
+  }
+  
+  button:disabled {
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  
+  #status {
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border: 2px solid #10b981;
+  }
+  
+  .error {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+    border: 2px solid #ef4444;
+  }
+  
+  .loading {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 2px solid #f59e0b;
+  }
+  
+  @media (max-width: 640px) {
+    .container {
+      padding: 28px 24px;
+    }
+    
+    h3 {
+      font-size: 22px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h3>📝 Form Input Data</h3>
+
+  <form id="form">
+    <!-- Hidden Fields -->
+    <input type="hidden" name="func" value="Create">
+    <input type="hidden" name="SH" value="catatan">
+    <input type="hidden" name="KODE" id="kodeUnik">
+    <input type="hidden" name="TUJUH" id="tujuh">
+    <input type="hidden" name="DUALAPAN" id="dualapan">
+    <input type="hidden" name="STATUS" id="statusField">
+    <input type="hidden" name="PEK" id="pekerjaanOutput">
+    <input type="hidden" name="TGL" id="tanggalFormatted">
+    <input type="hidden" name="LOKASI" id="proyekFinal">
+    <input type="hidden" name="SUHU" id="teknisiFinal">
+    <input type="hidden" name="MUTU" id="mutuFinal">
+
+    <!-- Tanggal -->
+    <label>Tanggal:</label>
+    <input type="date" id="tanggalInput" required>
+
+    <!-- Waktu -->
+    <label>Waktu:</label>
+    <input type="time" name="WAKTU" id="waktuInput" required>
+
+    <!-- Proyek -->
+    <label>Proyek:</label>
+    <select id="proyekSelect" required>
+      <option value="">Pilih Proyek</option>
+      <option value="RETAIL -">RETAIL -</option>
+      <option value="PT. PEMBANGUNAN PERUMAHAN">PT. PEMBANGUNAN PERUMAHAN</option>
+      <option value="WASKITA - ABIPRAYA">WASKITA - ABIPRAYA</option>
+      <option value="HUTAMA KARYA - JAYA KONSTRUKSI JO">HUTAMA KARYA - JAYA KONSTRUKSI JO</option>
+      <option value="WIKA-ADHI JO">WIKA-ADHI JO</option>
+      <option value="PT. DEMIKON">PT. DEMIKON</option>
+      <option value="PT. INTAN CIPTA PERDANA">PT. INTAN CIPTA PERDANA</option>
+      <option value="PT. SAMUDERA REKSO ASRI">PT. SAMUDERA REKSO ASRI</option>
+      <option value="manual">-- Input Manual --</option>
+    </select>
+    <input type="text" id="proyekManual" class="hidden" placeholder="Masukkan nama proyek">
+    <div class="warning" id="proyekWarning">⚠️ Pilih proyek atau isi manual!</div>
+
+    <!-- Teknisi -->
+    <label>Teknisi:</label>
+    <select id="teknisiSelect" required>
+      <option value="">Teknisi</option>
+      <option value="Agus">Agus</option>
+      <option value="Ardian">Ardian</option>
+      <option value="Egi">Egi</option>
+      <option value="Data">Data</option>
+      <option value="Deni">Deni</option>
+      <option value="Nanda">Nanda</option>
+      <option value="Septian">Septian</option>
+      <option value="Sugeng">Sugeng</option>
+      <option value="Taufik">Taufik</option>
+      <option value="manual">-- Input Manual --</option>
+    </select>
+    <input type="text" id="teknisiManual" class="hidden" placeholder="Masukkan nama teknisi">
+    <div class="warning" id="teknisiWarning">⚠️ Pilih teknisi atau isi manual!</div>
+
+    <!-- Mutu -->
+    <label>Mutu:</label>
+    <select id="mutuSelect" required>
+      <option value="">Pilih</option>
+      <option value="Class B-1">Class B-1</option>
+      <option value="Class B-2">Class B-2</option>
+      <option value="Class B-2 SCC">Class B-2 SCC</option>
+      <option value="Class C">Class C</option>
+      <option value="Class E">Class E</option>
+      <option value="FC 10">FC 10</option>
+      <option value="FC 15">FC 15</option>
+      <option value="FC 20">FC 20</option>
+      <option value="FC 30">FC 30</option>
+      <option value="FC 30 SCC">FC 30 SCC</option>
+      <option value="FS 45">FS 45</option>
+      <option value="FS 35">FS 35</option>
+      <option value="K 100">K 100</option>
+      <option value="K 125">K 125</option>
+      <option value="K 175">K 175</option>
+      <option value="K 225">K 225</option>
+      <option value="K 250">K 250</option>
+      <option value="K 300">K 300</option>
+      <option value="K 325">K 325</option>
+      <option value="K 350">K 350</option>
+      <option value="K 400">K 400</option>
+      <option value="K 500">K 500</option>
+      <option value="manual">-- Input Manual --</option>
+    </select>
+    <input type="text" id="mutuManual" class="hidden" placeholder="Masukkan mutu beton">
+    <div class="warning" id="mutuWarning">⚠️ Pilih mutu atau isi manual!</div>
+
+    <!-- Pekerjaan -->
+    <label>Pekerjaan:</label>
+    <input type="text" name="PEK" id="pekerjaanInput" placeholder="Contoh: Deckslab (atau - untuk skip)">
+
+    <!-- Preview Output -->
+    <div id="previewBox" class="preview-box hidden">
+      📄 Preview Output: <strong id="previewText"></strong>
+    </div>
+
+    <!-- Jumlah Benda Uji -->
+    <label>Jumlah Benda Uji:</label>
+    <input type="number" name="BU" placeholder="Contoh: 3">
+
+    <!-- Status -->
+    <label>Keterangan:</label>
+    <select name="KOD" id="kodSelect" required>
+      <option value="">Pilih</option>
+      <option value="Sample Plant">Sample Plant</option>
+      <option value="Sample Lapangan">Sample Lapangan</option>
+    </select>
+
+    <!-- Status Info -->
+    <div id="statusInfo" class="info-box hidden">
+      📋 Status akan diset: <strong id="statusText"></strong>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" id="submitBtn">💾 Simpan Data</button>
+  </form>
+
+  <p id="status"></p>
+</div>
+
+<script>
+// ==========================================
+// KONFIGURASI
+// ==========================================
+const CONFIG = {
+  scriptURL: "https://script.google.com/macros/s/AKfycbzvadX0e5eL64k1H0novOPldEX2egynby0cyC2MbBisw6utukkWmtyxj3UjPGcjipj7iQ/exec",
+  proyekMapping: {
+    "PT. PEMBANGUNAN PERUMAHAN": "PP - TOL PTB",
+    "WASKITA - ABIPRAYA": "WASKITA - ABP JO",
+    "HUTAMA KARYA - JAYA KONSTRUKSI JO": "HK - JAKON JO",
+    "WIKA-ADHI JO": "WIKA-ADHI JO",
+    "PT. INTAN CIPTA PERDANA": "ICP",
+    "PT. SAMUDERA REKSO ASRI": "PT SRA",
+    "RETAIL -": "RETAIL -",
+    "PT. DEMIKON": "PT. DEMIKON"
+  }
+};
+
+document.getElementById('waktuInput').addEventListener('focus', function(e) {
+    this.setAttribute('step', '60'); // Hilangkan detik
+});
+
+// Validasi format saat submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const waktu = document.getElementById('waktuInput').value;
+    console.log('Waktu dalam format 24 jam:', waktu); // Selalu HH:mm
+});
+
+
+// ==========================================
+// REFERENSI ELEMEN DOM
+// ==========================================
+const elements = {
+  form: document.getElementById("form"),
+  statusEl: document.getElementById("status"),
+  submitBtn: document.getElementById("submitBtn"),
+  
+  // Hidden fields
+  kodeUnik: document.getElementById("kodeUnik"),
+  tanggalFormatted: document.getElementById("tanggalFormatted"),
+  tujuh: document.getElementById("tujuh"),
+  dualapan: document.getElementById("dualapan"),
+  statusField: document.getElementById("statusField"),
+  pekerjaanOutput: document.getElementById("pekerjaanOutput"),
+  
+  // Input fields
+  tanggalInput: document.getElementById("tanggalInput"),
+  
+  // Proyek
+  proyekSelect: document.getElementById("proyekSelect"),
+  proyekManual: document.getElementById("proyekManual"),
+  proyekFinal: document.getElementById("proyekFinal"),
+  proyekWarning: document.getElementById("proyekWarning"),
+  
+  // Teknisi
+  teknisiSelect: document.getElementById("teknisiSelect"),
+  teknisiManual: document.getElementById("teknisiManual"),
+  teknisiFinal: document.getElementById("teknisiFinal"),
+  teknisiWarning: document.getElementById("teknisiWarning"),
+  
+  // Mutu
+  mutuSelect: document.getElementById("mutuSelect"),
+  mutuManual: document.getElementById("mutuManual"),
+  mutuFinal: document.getElementById("mutuFinal"),
+  mutuWarning: document.getElementById("mutuWarning"),
+  
+  // Pekerjaan
+  pekerjaanInput: document.getElementById("pekerjaanInput"),
+  
+  // Preview
+  previewBox: document.getElementById("previewBox"),
+  previewText: document.getElementById("previewText"),
+  
+  // Status
+  kodSelect: document.getElementById("kodSelect"),
+  statusInfo: document.getElementById("statusInfo"),
+  statusText: document.getElementById("statusText")
+};
+
+// ==========================================
+// FUNGSI UTILITY
+// ==========================================
+
+// Generate kode unik random
+function generateKodeUnik() {
+  return Math.floor(Math.random() * 99999) + 1;
+}
+
+// Format tanggal ke format "DD-MMM-YY"
+function formatTanggal(dateString) {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear().toString().slice(-2);
+  return `${day}-${month}-${year}`;
+}
+
+// Tambah hari ke tanggal
+function addDays(dateString, days) {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + days);
+  return formatTanggal(date.toISOString().split('T')[0]);
+}
+
+// Konversi nama proyek lengkap ke singkatan
+function getProyekSingkatan(proyekFull) {
+  return CONFIG.proyekMapping[proyekFull] || proyekFull.toUpperCase();
+}
+
+// ==========================================
+// FUNGSI UTAMA
+// ==========================================
+
+// Generate output pekerjaan berdasarkan input
+function generatePekerjaanOutput() {
+  const proyekFull = elements.proyekFinal.value;
+  const pekerjaan = elements.pekerjaanInput.value.trim();
+  const mutu = elements.mutuFinal.value;
+  
+  // Validasi input
+  if (!proyekFull || !mutu) {
+    elements.previewBox.classList.add("hidden");
+    return "";
+  }
+  
+  const proyekSingkat = getProyekSingkatan(proyekFull);
+  
+  // Jika pekerjaan kosong atau "-", skip bagian pekerjaan
+  let output;
+  if (!pekerjaan || pekerjaan === "-") {
+    output = `${proyekSingkat} / ${mutu.toUpperCase()} / AD PTB`;
+  } else {
+    output = `${proyekSingkat} / ${pekerjaan.toUpperCase()} / ${mutu.toUpperCase()} / AD PTB`;
+  }
+  
+  // Tampilkan preview
+  elements.previewText.textContent = output;
+  elements.previewBox.classList.remove("hidden");
+  
+  // Set nilai ke hidden field
+  elements.pekerjaanOutput.value = output;
+  
+  return output;
+}
+
+// Validasi form sebelum submit
+function validateForm() {
+  let hasError = false;
+  
+  // Validasi proyek
+  if (!elements.proyekFinal.value) {
+    elements.proyekWarning.style.display = "block";
+    hasError = true;
+  }
+  
+  // Validasi teknisi
+  if (!elements.teknisiFinal.value) {
+    elements.teknisiWarning.style.display = "block";
+    hasError = true;
+  }
+  
+  // Validasi mutu
+  if (!elements.mutuFinal.value) {
+    elements.mutuWarning.style.display = "block";
+    hasError = true;
+  }
+  
+  // Validasi status
+  if (!elements.statusField.value) {
+    showStatus("❌ Pilih status terlebih dahulu!", "error");
+    hasError = true;
+  }
+  
+  if (hasError) {
+    showStatus("❌ Lengkapi semua field yang diperlukan!", "error");
+  }
+  
+  return !hasError;
+}
+
+// Tampilkan status dengan animasi
+function showStatus(message, type) {
+  elements.statusEl.innerText = message;
+  elements.statusEl.className = type;
+}
+
+// Reset form ke kondisi awal
+function resetForm() {
+  elements.form.reset();
+  elements.proyekManual.classList.add("hidden");
+  elements.teknisiManual.classList.add("hidden");
+  elements.mutuManual.classList.add("hidden");
+  elements.statusInfo.classList.add("hidden");
+  elements.previewBox.classList.add("hidden");
+  elements.statusField.value = "";
+  elements.kodeUnik.value = generateKodeUnik();
+}
+
+// ==========================================
+// EVENT LISTENERS
+// ==========================================
+
+// Inisialisasi kode unik saat halaman load
+elements.kodeUnik.value = generateKodeUnik();
+
+// Event: Perubahan tanggal
+elements.tanggalInput.addEventListener("change", function() {
+  const tanggal = this.value;
+  elements.tanggalFormatted.value = formatTanggal(tanggal);
+  elements.tujuh.value = addDays(tanggal, 7);
+  elements.dualapan.value = addDays(tanggal, 28);
+});
+
+// Event: Perubahan proyek
+elements.proyekSelect.addEventListener("change", function() {
+  const value = this.value;
+  
+  if (value === "manual") {
+    // Mode manual input penuh
+    elements.proyekManual.classList.remove("hidden");
+    elements.proyekManual.required = true;
+    elements.proyekFinal.value = "";
+  } else if (value === "RETAIL -") {
+    // Mode RETAIL dengan input tambahan
+    elements.proyekManual.classList.remove("hidden");
+    elements.proyekManual.required = true;
+    elements.proyekManual.placeholder = "Masukkan nama customer";
+    elements.proyekFinal.value = "RETAIL -"; // Set nilai awal
+  } else {
+    // Mode pilihan biasa
+    elements.proyekManual.classList.add("hidden");
+    elements.proyekManual.required = false;
+    elements.proyekManual.placeholder = "Masukkan nama proyek";
+    elements.proyekFinal.value = value;
+  }
+  
+  elements.proyekWarning.style.display = "none";
+  generatePekerjaanOutput();
+});
+
+// Event: Input manual proyek
+elements.proyekManual.addEventListener("input", function() {
+  const proyekSelect = elements.proyekSelect.value;
+  const inputValue = this.value; // Ambil nilai terlebih dahulu
+  
+  if (proyekSelect === "RETAIL -") {
+    // Gabungkan "RETAIL -" dengan input manual (uppercase)
+    elements.proyekFinal.value = "RETAIL - " + inputValue.toUpperCase();
+  } else {
+    // Input manual biasa (uppercase)
+    elements.proyekFinal.value = inputValue.toUpperCase();
+  }
+  
+  generatePekerjaanOutput();
+});
+
+// Event: Perubahan teknisi
+elements.teknisiSelect.addEventListener("change", function() {
+  if (this.value === "manual") {
+    elements.teknisiManual.classList.remove("hidden");
+    elements.teknisiManual.required = true;
+    elements.teknisiFinal.value = "";
+  } else {
+    elements.teknisiManual.classList.add("hidden");
+    elements.teknisiManual.required = false;
+    elements.teknisiFinal.value = this.value;
+  }
+  elements.teknisiWarning.style.display = "none";
+});
+
+// Event: Input manual teknisi
+elements.teknisiManual.addEventListener("input", function() {
+  elements.teknisiFinal.value = this.value;
+});
+
+// Event: Perubahan mutu
+elements.mutuSelect.addEventListener("change", function() {
+  if (this.value === "manual") {
+    elements.mutuManual.classList.remove("hidden");
+    elements.mutuManual.required = true;
+    elements.mutuFinal.value = "";
+  } else {
+    elements.mutuManual.classList.add("hidden");
+    elements.mutuManual.required = false;
+    elements.mutuFinal.value = this.value;
+  }
+  elements.mutuWarning.style.display = "none";
+  generatePekerjaanOutput();
+});
+
+// Event: Input manual mutu
+elements.mutuManual.addEventListener("input", function() {
+  elements.mutuFinal.value = this.value;
+  generatePekerjaanOutput();
+});
+
+// Event: Input pekerjaan
+elements.pekerjaanInput.addEventListener("input", generatePekerjaanOutput);
+
+// Event: Perubahan status
+elements.kodSelect.addEventListener("change", function() {
+  const kodValue = this.value;
+  
+  if (kodValue === "Sample Plant") {
+    elements.statusField.value = "Di Plant";
+    elements.statusText.textContent = "Di Plant";
+    elements.statusInfo.classList.remove("hidden");
+  } else if (kodValue === "Sample Lapangan") {
+    elements.statusField.value = "Belum Dimonitor";
+    elements.statusText.textContent = "Belum Dimonitor";
+    elements.statusInfo.classList.remove("hidden");
+  } else {
+    elements.statusField.value = "";
+    elements.statusInfo.classList.add("hidden");
+  }
+});
+
+// Event: Submit form
+elements.form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  // Validasi form
+  if (!validateForm()) {
+    return;
+  }
+  
+  // Generate output pekerjaan
+  generatePekerjaanOutput();
+  
+  // Set status loading
+  showStatus("⏳ Mengirim data...", "loading");
+  elements.submitBtn.disabled = true;
+  elements.submitBtn.innerText = "Mengirim...";
+
+  try {
+    // Kirim data ke Google Apps Script
+    const formData = new FormData(e.target);
+    const response = await fetch(CONFIG.scriptURL, {
+      method: "POST",
+      body: new URLSearchParams(formData)
+    });
+
+    const result = await response.text();
+    
+    // Cek hasil response
+    if (result.includes("berhasil") || result.includes("sukses") || response.ok) {
+      showStatus("✅ " + result, "success");
+      resetForm();
+    } else {
+      showStatus("⚠️ " + result, "error");
+    }
+  } catch (error) {
+    showStatus("❌ Error: " + error.message + ". Pastikan URL Web App sudah benar!", "error");
+  } finally {
+    // Restore tombol submit
+    elements.submitBtn.disabled = false;
+    elements.submitBtn.innerText = "💾 Simpan Data";
+  }
+});
+</script>
+
+</body>
+</html>
