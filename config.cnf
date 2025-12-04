@@ -1,0 +1,27 @@
+[alatUji]
+baudrate = 9600
+bytesize = 8 
+
+
+[data]
+database = 'alatujidb'
+host = 'localhost'
+user = 'postgres'
+password = 'adhimix'
+
+[webser]
+http_user = 
+http_pass = 
+webser_bendaUji = https://rmc.adhimix.web.id/benda_uji/?doc_no=
+webser_hasilUji = https://rmc.adhimix.web.id/benda_uji/update/
+delay = 2
+
+[perintah]
+bersih = 2424240c0000
+start = 242424000000
+stop = 2424011021
+
+
+# 744.40
+# 42.13
+# 429.54
