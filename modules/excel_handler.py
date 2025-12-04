@@ -460,7 +460,7 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(-10, -3)  # Turun
                     else:
                         adjustment = random.uniform(3, 10)  # Naik
-                    new_beban = max(300, min(self.previous_beban + adjustment, 525))
+                    new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda
                 elif self.previous_docket != docket:
                     mean = 420
@@ -502,7 +502,7 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(-10, -3)  # Turun
                     else:
                         adjustment = random.uniform(3, 10)  # Naik
-                    new_beban = max(300, min(self.previous_beban + adjustment, 525))
+                    new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda
                 elif self.previous_docket != docket:
                     mean = 420
@@ -539,7 +539,7 @@ class ExcelBebanProcessor:
                 
                 # Skenario 2: Docket sama & beban != 0
                 elif self.previous_docket == docket and self.previous_beban != None:
-                    mean = (365 + 475) / 2  # 420
+                    mean = 420
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-10, -3)  # Turun
                     else:
@@ -547,17 +547,17 @@ class ExcelBebanProcessor:
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda
                 elif self.previous_docket != docket:
-                    mean = (365 + 480) / 2  # 405
+                    mean = 420
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-95, -85)  # Turun signifikan
+                        adjustment = random.uniform(-85, -73)  # Turun signifikan
                     else:
-                        adjustment = random.uniform(55, 65)  # Naik signifikan
+                        adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(325, min(new_beban, 460))
+                    new_beban = max(300, min(new_beban, 525))
                 else:
                     # Fallback (seharusnya tidak terjadi)
-                    new_beban = random.uniform(350, 460)
+                    new_beban = random.uniform(300, 525)
                 # Update tracking variables
                 self.previous_docket = str(docket) if docket is not None else None
                 self.previous_beban = new_beban
