@@ -264,7 +264,7 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(5, 15)  # Naik
                     new_beban = max(500, min(self.previous_beban + adjustment, 700))
                 # Skenario 3: Docket berbeda & mutu sama
-                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                elif self.previous_docket != docket:
                     mean = 625
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-83, -71)  # Turun signifikan
@@ -273,10 +273,6 @@ class ExcelBebanProcessor:
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
                     new_beban = max(540, min(new_beban, 710))
-                
-                # Skenario 4: Docket berbeda & mutu berbeda
-                elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(540, 660)
                     
                 else:
                     # Fallback (seharusnya tidak terjadi)
@@ -311,7 +307,7 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(5, 15)  # Naik
                     new_beban = max(500, min(self.previous_beban + adjustment, 700))
                 # Skenario 3: Docket berbeda & mutu sama
-                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                elif self.previous_docket != docket:
                     mean = 625
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-83, -71)  # Turun signifikan
@@ -320,10 +316,6 @@ class ExcelBebanProcessor:
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
                     new_beban = max(540, min(new_beban, 710))
-                
-                # Skenario 4: Docket berbeda & mutu berbeda
-                elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(540, 660)
                     
                 else:
                     # Fallback (seharusnya tidak terjadi)
@@ -397,20 +389,20 @@ class ExcelBebanProcessor:
                 elif self.previous_docket == docket and self.previous_beban != None:
                     mean = (430 + 500) / 2  # 465
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-29, -3)  # Turun
+                        adjustment = random.uniform(-13, -3)  # Turun
                     else:
-                        adjustment = random.uniform(3, 29)  # Naik
+                        adjustment = random.uniform(3, 13)  # Naik
                     new_beban = max(430, min(self.previous_beban + adjustment, 500))
                 # Skenario 3: Docket berbeda & mutu sama
                 elif self.previous_docket != docket and self.previous_mutu == mutu:
-                    mean = (430 + 500) / 2  # 465
+                    mean = 475
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-34, -20)  # Turun signifikan
+                        adjustment = random.uniform(-74, -67)  # Turun signifikan
                     else:
-                        adjustment = random.uniform(20, 34)  # Naik signifikan
+                        adjustment = random.uniform(59, 76)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(430, min(new_beban, 500))
+                    new_beban = max(398, min(new_beban, 560))
                 
                 # Skenario 4: Docket berbeda & mutu berbeda
                 elif self.previous_docket != docket and self.previous_mutu != mutu:
@@ -496,20 +488,15 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(3, 10)  # Naik
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda dan mutu sama
-                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                elif self.previous_docket != docket:
                     mean = 400
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-85, -73)  # Turun signifikan
+                        adjustment = random.uniform(-89, -76)  # Turun signifikan
                     else:
                         adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(300, min(new_beban, 500))
-                
-                # Skenario 4: Docket berbeda & mutu berbeda
-                elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(365, 475)
-                    
+                    new_beban = max(300, min(new_beban, 474))                  
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(365, 475)
@@ -543,20 +530,15 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(3, 10)  # Naik
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda dan mutu sama
-                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                elif self.previous_docket != docket:
                     mean = 400
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-85, -73)  # Turun signifikan
+                        adjustment = random.uniform(-89, -76)  # Turun signifikan
                     else:
                         adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(300, min(new_beban, 500))
-                
-                # Skenario 4: Docket berbeda & mutu berbeda
-                elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(365, 475)
-                    
+                    new_beban = max(300, min(new_beban, 474))                  
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(365, 475)
@@ -590,20 +572,15 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(3, 10)  # Naik
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda dan mutu sama
-                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                elif self.previous_docket != docket:
                     mean = 400
                     if self.previous_beban >= mean:
-                        adjustment = random.uniform(-85, -73)  # Turun signifikan
+                        adjustment = random.uniform(-89, -76)  # Turun signifikan
                     else:
                         adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(300, min(new_beban, 500))
-                
-                # Skenario 4: Docket berbeda & mutu berbeda
-                elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(365, 475)
-                    
+                    new_beban = max(300, min(new_beban, 474))                  
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(365, 475)
