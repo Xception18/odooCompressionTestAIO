@@ -48,7 +48,7 @@ def logger_debug(pesan):
 def login(driver, wait):
     """Handle login process"""
     username = "oenoseven@gmail.com"
-    password = "rmc"
+    password = "Odoo2026"
     login_url = "https://rmc.adhimix.web.id/web/login"
     logger.info("Navigating to login page...")
     driver.get(login_url)
@@ -58,20 +58,20 @@ def login(driver, wait):
     username_field.send_keys(username)
     password_field.send_keys(password)
     logger.info("Clicking login button...")
-    login_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".btn.btn-primary")))
+    login_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and contains(@class, 'btn-primary') and text()='Log in']")))
     login_button.click()
-    time.sleep(3)
+    time.sleep(1)
     logger.info(f"Current URL after login: {driver.current_url}")
 
 def navigate_and_create(driver, wait):
     wait_for_loading_overlay_to_disappear(driver, wait)
     """Navigate to create page and click create button"""
-    create_rbu_url = "https://rmc.adhimix.web.id/web?#min=1&limit=80&view_type=list&model=schedule.truck.mixer.benda.uji&menu_id=535"
+    create_rbu_url = "https://rmc.adhimix.web.id/web#model=schedule.truck.mixer.benda.uji&view_type=list&cids=124&menu_id=669"
     logger.info("Navigating to CREATE RENCANA BENDA UJI page...")
     driver.get(create_rbu_url)
     wait_for_loading_overlay_to_disappear(driver, wait)
     logger.info("CREATE RENCANA BENDA UJI...")
-    create_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[1]/div[2]/div[1]/div/button[1]")))
+    create_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "body > div.o_action_manager > div > div.o_control_panel.d-flex.flex-column.gap-3.gap-lg-1.px-3.pt-2.pb-3 > div > div.o_control_panel_breadcrumbs.d-flex.align-items-center.gap-1.order-0.h-lg-100 > div.o_control_panel_main_buttons.d-flex.gap-1.d-empty-none.d-print-none > div.d-none.d-xl-inline-flex.gap-1 > button")))
     create_button.click()
 
 def fill_proyek_form(driver, wait, row_data):
@@ -80,28 +80,9 @@ def fill_proyek_form(driver, wait, row_data):
     wait_for_loading_overlay_to_disappear(driver, wait)
     tgl_mulai_prod = str(row_data.iloc[0]) if len(row_data) > 0 else "None"
     logger.info(f"Filling Date form with: {tgl_mulai_prod}")
-    tgl_field = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[2]/div/div/div/div/div[1]/table[1]/tbody/tr[1]/td[2]/div/input")))
+    tgl_field = wait.until(EC.element_to_be_clickable((By.ID, "mulai_produksi_docket_0")))
     tgl_field.clear()
     tgl_field.send_keys(tgl_mulai_prod)
-    # Proyek field - from Excel column 4 (index 3)
-    proyek = str(row_data.iloc[3]) if len(row_data) > 3 else "-"
-    logger.info(f"Filling Proyek field with: {proyek}")
-    proyek_field = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[2]/div/div/div/div/div[1]/table[1]/tbody/tr[2]/td[2]/div/div/input")))
-    proyek_field.clear()
-    proyek_field.send_keys(proyek)
-    time.sleep(3)
-    
-    if proyek == "JALAN TOL AKSES PATIMBAN":
-        proyek_option = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[1]/li[2]")))
-        proyek_option.click()
-        logger.info("Selected 'JALAN TOL AKSES PATIMBAN' from dropdown")
-    else:
-        try:
-            dropdown_option = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[1]/li[1]")))
-            dropdown_option.click()
-            logger.info("Proyek selected")
-        except TimeoutException:
-            logger.error("Proyek dropdown not found")
 
 def fill_docket_form(driver, wait, row_data):
     """Fill docket form using Excel data"""
@@ -110,25 +91,26 @@ def fill_docket_form(driver, wait, row_data):
     no_docket = str(row_data.iloc[1]) if len(row_data) > 1 else "None"
     logger.info(f"Filling No. Docket field with: {no_docket}")
     # Click and fill the No. Docket field
-    no_docket_field = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[2]/div/div/div/div/div[1]/table[1]/tbody/tr[3]/td[2]/div/div/input")))
+    no_docket_field = wait.until(EC.element_to_be_clickable((By.ID, "rel_docket_0")))
     driver.execute_script("arguments[0].scrollIntoView(true);", no_docket_field)
     time.sleep(1)
     no_docket_field.click()
     no_docket_field.clear()
     no_docket_field.send_keys(no_docket)
-    time.sleep(3)
     
     try:
         time.sleep(1)
         # Check if the element exists without waiting
-        xpath = f"//ul[@class='ui-autocomplete ui-front ui-menu ui-widget ui-widget-content']//a[text()='{no_docket}']"
+        xpath = f"//a[@role='option' and contains(@class, 'dropdown-item') and contains(@class, 'ui-menu-item-wrapper') and normalize-space()='{no_docket}']"
         elements = driver.find_elements(By.XPATH, xpath)
         
         if elements and elements[0].is_displayed():
             # Element found, click it
             logger.info(f"Found {no_docket} in autocomplete dropdown")
-            elements[0].click()
+            driver.execute_script("arguments[0].click();", elements[0])
+            time.sleep(1)
             logger.info(f"Successfully clicked on {no_docket} from autocomplete dropdown")
+
         else:
             logger.info(f"Element with text '{no_docket}' not found in autocomplete dropdown")
             logger.info("Using 'Search more...' option as fallback")
@@ -155,6 +137,7 @@ def fill_docket_form(driver, wait, row_data):
     # Fill remaining fields using Excel data
     slump_value = str(row_data.iloc[6]) if len(row_data) > 6 else "12" # Column 7 (index 6)
     slump_mapping = {
+        "Slump 12.0 +1.5/-1.5": "12",
         "Slump 12.0 +2.0/-2.0": "12",
         "Slump 10.0 +2.0/-2.0": "10",
         "Slump 55.0 +10.0/-0.0": "55"
@@ -166,22 +149,56 @@ def fill_docket_form(driver, wait, row_data):
     slump_test = generate_random_slump_test(slump_rencana)
     yield_value = generate_random_yield()
     nama_teknisi = str(row_data.iloc[4]) if len(row_data) > 4 else "TEKNISI"  # Column 5 (index 4)
-    base_jam = str(row_data.iloc[8]) if len(row_data) > 8 else "10:30"  # Column 9 (index 8)
+    # Try to extract base_jam from web
+    try:
+        # Selector for: <div name="jam_berangkat" ...><span class="text-truncate">...</span></div>
+        jam_berangkat_elem = driver.find_element(By.CSS_SELECTOR, "div[name='jam_berangkat'] span.text-truncate")
+        base_jam = jam_berangkat_elem.text.strip()
+        logger.info(f"Extracted base_jam from web: {base_jam}")
+    except Exception as e:
+        logger.warning(f"Could not extract base_jam from web, falling back to Excel. Error: {e}")
+        base_jam = str(row_data.iloc[8]) if len(row_data) > 8 else "10:30"  # Column 9 (index 8)
     jam_sample = calculate_jam_sample(base_jam)
-    base_xpath = "/html/body/div[1]/div/div[2]/div/div/div/div/div[1]/table[2]/tbody/tr"
+    logger.info(f"Calculated jam_sample: {jam_sample}")
+    base_xpath = "/html/body/div[2]/div/div/div[2]/div/div/div[2]/div[1]/div[2]/"
     form_fields = [
-        (f"{base_xpath}[2]/td[2]/input", slump_rencana, "Slump Rencana"),
-        (f"{base_xpath}[3]/td[2]/input", slump_test, "Slump Test"),
-        (f"{base_xpath}[4]/td[2]/input", yield_value, "Yield"),
-        (f"{base_xpath}[5]/td[2]/input", nama_teknisi, "Nama Teknisi"),
-        (f"{base_xpath}[6]/td[2]/input", jam_sample, "Jam Sample")
+        (f"{base_xpath}div[3]/div[2]/div/input", slump_rencana, "Slump Rencana"),
+        (f"{base_xpath}div[4]/div[2]/div/input", slump_test, "Slump Test"),
+        (f"{base_xpath}div[5]/div[2]/div/input", yield_value, "Yield"),
     ]
     for xpath, value, field_name in form_fields:
         time.sleep(1)
         fill_field(driver, wait, xpath, value, field_name)
+    
+    # Fill remaining fields using Excel data
+    time.sleep(1)
+    jam_sample_field = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[id='date_sample_0'][data-field='date_sample']")))
+    jam_sample_field.click()
+    jam_sample_field.send_keys(jam_sample)
+    jam_sample_field.send_keys(Keys.TAB)
+    time.sleep(1)
+    nama_teknisi_field = wait.until(EC.element_to_be_clickable((By.ID, "nama_teknisi_0")))
+    nama_teknisi_field.click()
+    nama_teknisi_field.clear()
+    nama_teknisi_field.send_keys(nama_teknisi)
+    time.sleep(1)
+    jam_sample_0 = wait.until(EC.element_to_be_clickable((By.ID, "jam_sample_0")))
+    jam_sample_0.click()
+    jam_sample_0.clear()
+
+    # Format HH:MM specifically for jam_sample_0 while keeping jam_sample intact
+    jam_to_input = jam_sample
+    if ' ' in jam_sample:
+        try:
+            # Extract HH:MM from "DD/MM/YYYY HH:MM:SS"
+            jam_to_input = jam_sample.split(' ')[1][:5]
+        except:
+            pass
+
+    jam_sample_0.send_keys(jam_to_input)
 
 def data_to_input(driver, no_urut, row_data, is_first_row=False, stop_event=None):
-    """Input data to the table row using Excel data"""
+    """Input data to the table row using Excel data with robust selectors"""
     wait = WebDriverWait(driver, 5)
     # Determine test age based on sequence number
     rencana_umur_test = "7" if no_urut in [1, 2] else "28"
@@ -190,84 +207,122 @@ def data_to_input(driver, no_urut, row_data, is_first_row=False, stop_event=None
     bentuk_benda_uji = "Silinder 15 x 30 cm"
     logger.info(f"Input Row {no_urut} on data table...")
     time.sleep(1)
-    # Only click on the first row if it's the first iteration
+
+    # 1. FIND THE TARGET ROW
+    # Use tr.o_data_row to find all data rows.
+    # Note: Odoo 16/17+ often uses virtual IDs or just indices.
+    rows = driver.find_elements(By.CSS_SELECTOR, "div[name='benda_uji_ids'] table tbody tr.o_data_row")
+    
     if is_first_row:
-        first_row = wait.until(EC.element_to_be_clickable(
-                    (By.CSS_SELECTOR, "tr[data-id^='one2many_v_id_'] td.o_list_number[data-field='nomor_urut']")
-                ))
-        first_row.click()
-
-    else:
-        # For rows 2-4, try to find and click the specific row
+        # Assuming the first row is the first one in the table
+        target_row = rows[0]
+        # Click it to activate edit mode if needed (though usually "Add a line" focuses implicitly)
         try:
-            # Try to find the row with the specific number
-            rows = driver.find_elements(By.CSS_SELECTOR, "tr[data-id^='one2many_v_id_'] td.o_list_number[data-field='nomor_urut']")
-            if len(rows) >= no_urut:
-                target_row = rows[no_urut - 1]  # Index is 0-based, no_urut is 1-based
+             target_row.click()
+        except:
+             pass 
+    else:
+        # Find the row corresponding to no_urut (1-based index)
+        if len(rows) >= no_urut:
+            target_row = rows[no_urut - 1]
+            try:
+                target_row.click() # Ensure row is active
+            except:
+                pass
+        else:
+            logger.warning(f"Row {no_urut} not found, using last available row")
+            target_row = rows[-1]
+            try:
                 target_row.click()
-            else:
-                logger.warning(f"Row {no_urut} not found, using first available row")
-                target_row = rows[0] if rows else None
-                if target_row:
-                    target_row.click()
-        except Exception as e:
-            logger.warning(f"Error finding row {no_urut}: {e}")
-    # Fill all fields for the row
-    base_xpath = "/html/body/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/table/tbody/tr/td/div/div[2]/div[1]"
-    fields_data = [
-        (f"{base_xpath}/input[1]", str(no_urut), "No Urut"),
-        (f"{base_xpath}/input[2]", kode_benda_uji, "Kode Benda Uji"),
-        (f"{base_xpath}/div[1]/div/input", rencana_umur_test, "Rencana Umur Test"),
-    ]
-    for xpath, value, field_name in fields_data:
-        if stop_event and stop_event.is_set():
-            logger.warning("Stop signal received in data_to_input loop")
-            driver.quit()
-            return
-        logger.info(f"Filling {field_name} with value: {value}")
-        field = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", field)
-        field.send_keys(Keys.CONTROL, "a")
-        field.send_keys(Keys.DELETE)
-        field.send_keys(str(value))
-        time.sleep(1)
+            except:
+                pass
 
+    # Helper function to fill fields within the specific row
+    def fill_row_field(row_element, field_name, value, is_select=False, is_autocomplete=False):
+        try:
+            # Find the cell by name attribute on the td
+            cell = row_element.find_element(By.CSS_SELECTOR, f"td[name='{field_name}']")
+            
+            if is_select:
+                input_el = cell.find_element(By.TAG_NAME, "select")
+                input_el.click()
+                time.sleep(0.5)
+                # Select option by text content if possible, or value
+                # Using xpath to find option with text containing value
+                # Since input_el is a select, we can use Select class or clicking options
+                # Simplified: assume value is what we want to select
+                try:
+                    option = input_el.find_element(By.XPATH, f".//option[contains(text(), '{value}')]")
+                    option.click()
+                except:
+                   # If exact text fails, try standard keys or value
+                   # Try selecting by index if specific values known
+                   if value == "Internal":
+                       # Assuming 2nd option as per original code logic (index 1)
+                       input_el.find_elements(By.TAG_NAME, "option")[1].click()
+                   
+            elif is_autocomplete:
+                input_el = cell.find_element(By.TAG_NAME, "input")
+                input_el.click()
+                input_el.clear()
+                input_el.send_keys(str(value))
+                time.sleep(1)
+                # Wait for autocomplete dropdown
+                try:
+                     # Odoo autocomplete usually appears in a dropdown
+                     # We can press Enter to select first option if it highlights, 
+                     # but finding the dropdown result is safer. 
+                     # Pressing arrow down + enter is a common fallback
+                     input_el.send_keys(Keys.ENTER)
+                except Exception as e:
+                     logger.warning(f"Autocomplete selection failed for {field_name}: {e}")
+
+            else: # Standard input
+                input_el = cell.find_element(By.TAG_NAME, "input")
+                input_el.click()
+                input_el.clear()
+                input_el.send_keys(str(value))
+                
+        except Exception as e:
+            logger.error(f"Error filling {field_name}: {e}")
+
+    # 2. FILL DATA
+    if stop_event and stop_event.is_set():
+        return
+
+    # No Urut
+    fill_row_field(target_row, "nomor_urut", str(no_urut))
+    time.sleep(0.5)
+
+    # Kode Benda Uji
+    fill_row_field(target_row, "kode_benda_uji", kode_benda_uji)
+    time.sleep(0.5)
+
+    # Rencana Umur Test (benda_uji_id)
+    # Value is "7" or "28" (days) - assuming text match works for autocomplete
+    fill_row_field(target_row, "benda_uji_id", rencana_umur_test, is_autocomplete=True)
+    time.sleep(0.5)
+
+    # Bentuk Benda Uji
+    fill_row_field(target_row, "bentuk_benda_uji", bentuk_benda_uji, is_autocomplete=True)
+    time.sleep(0.5)
+
+    # Tempat Pengetesan
+    fill_row_field(target_row, "tempat_pengetesan", "Internal", is_select=True)
+    time.sleep(0.5)
+    
     wait_for_loading_overlay_to_disappear(driver, wait)
 
-    if rencana_umur_test == "7":
-        umur7 = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[3]/li[1]/a")))
-        umur7.click()
-    else:
-        umur28 = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[3]/li/a")))
-        umur28.click()
-
-    # Fill Bentuk Benda Uji
-    logger.info(f"Filling Bentuk Benda Uji field for row {no_urut}...")
-    bentuk_benda_uji_field = driver.find_element(By.CSS_SELECTOR, '[data-fieldname="bentuk_benda_uji"] .o_form_input')
-    bentuk_benda_uji_field.click()
-    bentuk_benda_uji_field.send_keys(Keys.CONTROL, "a")
-    bentuk_benda_uji_field.send_keys(Keys.DELETE) 
-    bentuk_benda_uji_field.send_keys(bentuk_benda_uji)
-    time.sleep(1)
-    silinder_select = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[4]/li[1]/a")))
-    silinder_select.click()
-    time.sleep(1)
-
-    # Fill Tempat Pengetesan
-    logger.info(f"Filling Tempat Pengetesan field for row {no_urut}...")
-    tempat_field = wait.until(EC.element_to_be_clickable((By.XPATH, f"{base_xpath}/select")))
-    tempat_field.click()
-    time.sleep(1)
-    tempat_internal_select = wait.until(EC.element_to_be_clickable((By.XPATH, f"{base_xpath}/select/option[2]")))
-    tempat_internal_select.click()
-    time.sleep(1)
 
 def add_table_rows(driver, wait, row_data, stop_event=None):
     """Add and fill table rows using Excel data"""
     logger.info("Processing table rows...")
     
-    # Check how many existing rows with data-id^='one2many_v_id' exist
-    existing_rows = driver.find_elements(By.CSS_SELECTOR, "tr[data-id^='one2many_v_id_']")
+    # Check how many existing rows
+    # Check how many existing rows
+    # Use robust selector for rows found via live web analysis
+    # Scoped to benda_uji_ids to ensure we target the correct table
+    existing_rows = driver.find_elements(By.CSS_SELECTOR, "div[name='benda_uji_ids'] .o_data_row")
     existing_count = len(existing_rows)
     logger.info(f"Found {existing_count} existing rows")
     
@@ -275,59 +330,51 @@ def add_table_rows(driver, wait, row_data, stop_event=None):
     if existing_count > 4:
         logger.info(f"More than 4 rows exist ({existing_count}), deleting excess rows...")
         rows_to_delete = existing_count - 4
-        deleted_count = quick_delete_excess_rows(driver, rows_to_delete)
-        logger.info(f"Deleted {deleted_count} excess rows")
+        # Note: quick_delete_excess_rows might need check if it uses old selectors
+        # For now, assuming it works or we should refactor it too if finding row fails
+        # But let's proceed with filling first. 
+        quick_delete_excess_rows(driver, rows_to_delete) 
         time.sleep(1)
-        # Recheck existing count after deletion
-        existing_rows = driver.find_elements(By.CSS_SELECTOR, "tr[data-id^='one2many_v_id_']")
+        existing_rows = driver.find_elements(By.CSS_SELECTOR, "div[name='benda_uji_ids'] .o_data_row")
         existing_count = len(existing_rows)
-        logger.info(f"After deletion: {existing_count} rows remain")
     
     # Get add item link
-    add_item_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Add an item")))
+    # New selector: scoped to benda_uji_ids
+    try:
+        add_item_link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[name='benda_uji_ids'] .o_field_x2many_list_row_add a")))
+    except:
+        # Fallback to text
+        add_item_link = wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Add a line")))
     
     if existing_count < 4:
-        # Fill existing rows first, then add new ones
+        # Fill existing rows first
         logger.info("Less than 4 rows exist, filling existing rows first...")
-        
-        # Fill existing rows in order
         for no_urut in range(1, existing_count + 1):
-            if stop_event and stop_event.is_set():
-                logger.warning("Stop signal received in add_table_rows loop 1")
-                driver.quit()
-                return
+            if stop_event and stop_event.is_set(): return
             logger.info(f"Filling existing row {no_urut}...")
             data_to_input(driver, no_urut, row_data, is_first_row=(no_urut == 1), stop_event=stop_event)
         
-        # Add and fill remaining rows using add item link
+        # Add and fill remaining rows
         for no_urut in range(existing_count + 1, 5):
-            if stop_event and stop_event.is_set():
-                logger.warning("Stop signal received in add_table_rows loop 2")
-                driver.quit()
-                return
+            if stop_event and stop_event.is_set(): return
             logger.info(f"Adding new row {no_urut}...")
+            # Click add line
             add_item_link.click()
-            time.sleep(1)  # Wait for row to be added
+            time.sleep(1) 
             data_to_input(driver, no_urut, row_data, is_first_row=False, stop_event=stop_event)
     else:
-        # If exactly 4 rows exist, just fill them
-        logger.info("Exactly 4 rows exist, filling existing rows...")
+        # Exactly 4 or more, fill first 4
+        logger.info("Sufficient rows exist, filling first 4...")
         for no_urut in range(1, 5):
-            if stop_event and stop_event.is_set():
-                logger.warning("Stop signal received in add_table_rows loop 3")
-                driver.quit()
-                return
+            if stop_event and stop_event.is_set(): return
             logger.info(f"Filling row {no_urut}...")
             data_to_input(driver, no_urut, row_data, is_first_row=(no_urut == 1), stop_event=stop_event)
 
 def save_form(driver, wait):
     """Save the form"""
     time.sleep(2)
-    tablist = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[2]/div/div/div/div/div[2]/ul")))
-    tablist.click()
-    wait_for_loading_overlay_to_disappear(driver, wait)
     logger.info("Saving Rencana Benda Uji...")
-    save_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[1]/div[2]/div[1]/div/div[2]/button[1]")))
+    save_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".o_form_button_save")))
     logger.info("Save button found, clicking...")
     save_button.click()
     time.sleep(3)
@@ -335,7 +382,7 @@ def save_form(driver, wait):
 def create_form(wait):
     """Create new form"""
     logger.info("Creating new form...")
-    create_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[1]/div[2]/div[1]/div/div[1]/button[2]")))
+    create_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/div/div[1]/div/div[1]/div[1]/div[2]/button")))
     logger.info("Create button found, clicking...")
     create_button.click()
 
@@ -343,10 +390,10 @@ def duplicate_form(driver, wait, next_row_data, stop_event=None):
     """Duplicate form for next entry with same kode_benda_uji and proyek"""
     wait_for_loading_overlay_to_disappear(driver, wait)
     logger.info("Duplicating Rencana Benda Uji...")
-    action_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[1]/div[2]/div[2]/div/div[2]/button")))
+    action_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/div/div[1]/div/div[1]/div[2]/div/div[2]/div/div/button/i")))
     action_button.click()
     time.sleep(1)
-    duplicate_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div/div[1]/div[2]/div[2]/div/div[2]/ul/li/a")))
+    duplicate_button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/div/div[1]/div/div[1]/div[2]/div/div[2]/div/div/div/span[1]")))
     logger.info("Duplicate button found, clicking...")
     duplicate_button.click()
     time.sleep(2)

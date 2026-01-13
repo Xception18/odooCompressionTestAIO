@@ -56,10 +56,7 @@ def fill_field(driver, wait, xpath, value, field_name):
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", field)
         time.sleep(0.2)
         field.click()
-        field.send_keys(Keys.CONTROL, "a")
-        field.send_keys(Keys.DELETE)
         field.send_keys(str(value))
-        field.send_keys(Keys.TAB)
         
         # Verify value entered
         try:
@@ -205,7 +202,7 @@ def quick_delete_all(driver):
     deleted_count = 0
     try:
         while True:
-            delete_buttons = driver.find_elements(By.CSS_SELECTOR, 'tr[data-id^="one2many_v_id_"] td.o_list_record_delete .fa-trash-o')
+            delete_buttons = driver.find_elements(By.CSS_SELECTOR, 'td.o_list_record_remove.text-center > button')
             if not delete_buttons:
                 break
             
@@ -231,7 +228,7 @@ def quick_delete_excess_rows(driver, rows_to_delete):
     deleted_count = 0
     try:
         for i in range(rows_to_delete):
-            delete_buttons = driver.find_elements(By.CSS_SELECTOR, 'tr[data-id^="one2many_v_id_"] td.o_list_record_delete .fa-trash-o')
+            delete_buttons = driver.find_elements(By.CSS_SELECTOR, 'td.o_list_record_remove.text-center > button')
             if not delete_buttons:
                 break
             

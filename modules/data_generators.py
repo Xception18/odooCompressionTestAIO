@@ -1,4 +1,5 @@
 import random
+from datetime import datetime, timedelta
 
 def generate_random_slump_test(slump_rencana):
     """Generate random slump test value (±2 from slump_rencana)"""
@@ -23,26 +24,48 @@ def generate_random_yield():
 def calculate_jam_sample(base_time):
     """Calculate jam sample by adding 1:10 to 1:50 hours to base time"""
     try:
-        # Check if base_time contains date (format: 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD HH:MM')
-        if ' ' in str(base_time):
-            # Extract time part from datetime string
-            time_part = str(base_time).split(' ')[1]
-            # Handle seconds if present
-            if time_part.count(':') == 2:
-                time_part = ':'.join(time_part.split(':')[:2])  # Keep only HH:MM
-            base_hour, base_minute = map(int, time_part.split(':'))
+        additional_minutes = random.randint(65, 90)
+        str_val = str(base_time).strip()
+        
+        # Check if base_time contains date (format: 'DD/MM/YYYY HH:MM:SS' or 'YYYY-MM-DD HH:MM:SS')
+        if ' ' in str_val:
+            dt = None
+            # Try various formats
+            formats = [
+                '%d/%m/%Y %H:%M:%S',
+                '%d/%m/%Y %H:%M',
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d %H:%M'
+            ]
+            
+            for fmt in formats:
+                try:
+                    dt = datetime.strptime(str_val, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if dt:
+                new_dt = dt + timedelta(minutes=additional_minutes)
+                return new_dt.strftime('%d/%m/%Y %H:%M:%S')
+            else:
+                # If parsing fails despite containing space, return random fallback or handle error
+                # For now falling back to existing logic (which might error out or hit the except block below)
+                raise ValueError("Unknown date format")
         else:
             # Original format HH:MM
-            base_hour, base_minute = map(int, str(base_time).split(':'))
-        
-        # Add random time between 1:5 to 1:30 hours
-        additional_minutes = random.randint(65, 90)
-        
-        total_minutes = base_hour * 60 + base_minute + additional_minutes
-        final_hour = (total_minutes // 60) % 24
-        final_minute = total_minutes % 60
-        
-        return f"{final_hour:02d}:{final_minute:02d}"
+            # Handle seconds if present but we only return HH:MM as per original logic for time-only
+            time_part = str_val
+            if time_part.count(':') == 2:
+                time_part = ':'.join(time_part.split(':')[:2])
+            
+            base_hour, base_minute = map(int, time_part.split(':'))
+            
+            total_minutes = base_hour * 60 + base_minute + additional_minutes
+            final_hour = (total_minutes // 60) % 24
+            final_minute = total_minutes % 60
+            
+            return f"{final_hour:02d}:{final_minute:02d}"
     except:
         # Fallback to random time
         hour = random.randint(10, 15)
