@@ -76,9 +76,9 @@ def select_first_row_in_modal_and_confirm(driver, wait, row_text: str | None = N
     for attempt in range(1, max_attempts + 1):
         try:
             # Find visible modal
-            visible_modals = driver.find_elements(By.CSS_SELECTOR, "div.modal.show, div.modal.in, div.modal[style*='display: block']")
+            visible_modals = driver.find_elements(By.CSS_SELECTOR, "div.modal.show, div.modal.in, div.modal-content, div.modal[style*='display: block']")
             modal = visible_modals[-1] if visible_modals else wait.until(EC.visibility_of_element_located((
-                By.CSS_SELECTOR, "div.modal.show, div.modal.in, div.modal[style*='display: block']"
+                By.CSS_SELECTOR, "div.modal.show, div.modal.in, div.modal-content, div.modal[style*='display: block']"
             )))
 
             # Find table in modal

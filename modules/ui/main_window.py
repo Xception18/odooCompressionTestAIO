@@ -612,12 +612,14 @@ class ExcelProcessorGUI:
                             self.logger.info(f"Process completed successfully")
                             self.logger.info(f"Successful rows: {results['successful_rows']}")
                             self.logger.info(f"Failed rows: {results.get('failed_rows', 0)}")
+                            self.logger.info(f"Skipped rows: {results.get('skipped_rows', 0)}")
                             self.logger.info("=" * 60)
                         
                         messagebox.showinfo("Success", 
                             f"Proses selesai!\n\n"
                             f"✅ Berhasil: {results['successful_rows']} baris\n"
-                            f"❌ Gagal: {results.get('failed_rows', 0)} baris")
+                            f"❌ Gagal: {results.get('failed_rows', 0)} baris\n"
+                            f"⏭️ Skipped: {results.get('skipped_rows', 0)} baris")
                     else:
                         # Process failed
                         error_msg = "❌ Process failed"
@@ -1267,6 +1269,7 @@ class ExcelProcessorGUI:
         """Upload CSV data to PostgreSQL database"""
         today = datetime.now().strftime('%Y-%m-%d')
         csv_file = os.path.join(self.file_csv.get())
+        csv_file_name = os.path.basename(csv_file)
         
         if not os.path.isfile(csv_file):
             self.logger.error(f"File {csv_file} does not exist.")
@@ -1287,6 +1290,7 @@ class ExcelProcessorGUI:
             # Display uploaded data
             try:
                 uploaded_df = pd.read_sql_table(self.table_name.get(), engine)
+                self.logger.info(f"Uploaded data: {csv_file_name}")
                 self.logger.info(f"Total records in database: {len(uploaded_df)}")
             except Exception as e:
                 self.logger.error(f"Failed to display uploaded data: {e}")
@@ -1295,6 +1299,7 @@ class ExcelProcessorGUI:
             orig = getattr(e, 'orig', None)
             pgcode = getattr(orig, 'pgcode', None)
             if pgcode == '23505':
+                self.logger.info(f"Failed data: {csv_file_name}")
                 self.logger.error("Upload failed: DUPLICATE DATA DETECTED")
             else:
                 self.logger.error(f"Upload error: {e}")

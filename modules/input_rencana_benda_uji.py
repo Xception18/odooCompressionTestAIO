@@ -24,6 +24,9 @@ from modules.data_generators import (
 )
 from modules.excel_handler import ExcelDataProcessor
 
+class DuplicateDocketException(Exception):
+    pass
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(funcName)s : %(lineno)d - %(message)s')
 logger = logging.getLogger('ExcelProcessor')
@@ -99,38 +102,57 @@ def fill_docket_form(driver, wait, row_data):
     no_docket_field.send_keys(no_docket)
     
     try:
-        time.sleep(1)
-        # Check if the element exists without waiting
-        xpath = f"//a[@role='option' and contains(@class, 'dropdown-item') and contains(@class, 'ui-menu-item-wrapper') and normalize-space()='{no_docket}']"
-        elements = driver.find_elements(By.XPATH, xpath)
+        # Check if the element exists with wait
+        xpath = f"//li[contains(@class, 'o-autocomplete--dropdown-item')]//a[contains(@class, 'ui-menu-item-wrapper') and normalize-space()='{no_docket}']"
+        try:
+            element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            elements = [element]
+        except TimeoutException:
+            elements = []
         
         if elements and elements[0].is_displayed():
             # Element found, click it
             logger.info(f"Found {no_docket} in autocomplete dropdown")
             driver.execute_script("arguments[0].click();", elements[0])
-            time.sleep(1)
+            
+            # Check for Duplicate Docket Error
+            wait = WebDriverWait(driver, 5)
+            try:
+                error_modal = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.modal-content.o_error_dialog")))
+                if "Docket ini sudah pernah dibuat benda uji !" in error_modal.text:
+                    logger.warning("Detected duplicate docket error!")
+                    # Click close button
+                    close_btn = error_modal.find_element(By.CSS_SELECTOR, ".modal-footer button.btn-primary")
+                    close_btn.click()
+                    raise DuplicateDocketException("Docket ini sudah pernah dibuat benda uji !")
+            except DuplicateDocketException:
+                raise
+            except:
+                # No error modal found or other error, continue
+                pass
+
             logger.info(f"Successfully clicked on {no_docket} from autocomplete dropdown")
 
         else:
             logger.info(f"Element with text '{no_docket}' not found in autocomplete dropdown")
             logger.info("Using 'Search more...' option as fallback")
             # Search more option
-            search_more = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/ul[2]/li[8]/a")))
+            search_more = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/div/div[2]/div/div/div[2]/div[1]/div[1]/div[2]/div[2]/div/div[1]/div/div/ul/li[2]/a")))
             search_more.click()
+            row = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "tr.o_data_row")))
+            row.click()
             # Search in modal
-            modal = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".modal-content")))
-            try:
-                search_input = modal.find_element(By.CSS_SELECTOR, ".o_searchview input.o_searchview_input")
-            except NoSuchElementException:
-                search_input = modal.find_element(By.CSS_SELECTOR, ".o_searchview input.o_input")
-            search_input.click()
-            search_input.clear()
-            search_input.send_keys(no_docket)
-            search_input.send_keys(Keys.ENTER)
+            #modal = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".modal-content")))
+            #try:
+            #    search_input = modal.find_element(By.CSS_SELECTOR, ".o_searchview input.o_searchview_input")
+            #except NoSuchElementException:
+            #    search_input = modal.find_element(By.CSS_SELECTOR, ".o_searchview input.o_input")
             # Wait for search results and select
-            wait.until(EC.visibility_of_element_located((By.XPATH, f"//div[contains(@class,'modal-content')]//div[contains(@class,'o_searchview_facet')][.//span[contains(@class,'o_searchview_facet_label')][normalize-space()='No. Docket']]//div[contains(@class,'o_facet_values')]//span[contains(normalize-space(), \"{no_docket}\")]")))
+            #wait.until(EC.visibility_of_element_located((By.XPATH, f"//div[contains(@class,'modal-content')]//div[contains(@class,'o_searchview_facet')][.//span[contains(@class,'o_searchview_facet_label')][normalize-space()='No. Docket']]//div[contains(@class,'o_facet_values')]//span[contains(normalize-space(), \"{no_docket}\")]")))
             time.sleep(3)
-            select_first_row_in_modal_and_confirm(driver, wait, row_text=no_docket)   
+            #select_first_row_in_modal_and_confirm(driver, wait, row_text=no_docket)
+    except DuplicateDocketException:
+        raise
     except Exception as e:
         logger.error(f"Error in docket selection: {str(e)}")
 
@@ -139,12 +161,14 @@ def fill_docket_form(driver, wait, row_data):
     slump_mapping = {
         "Slump 12.0 +1.5/-1.5": "12",
         "Slump 12.0 +2.0/-2.0": "12",
+        "Slump 18.0 +2.0/-2.0": "18",
         "Slump 10.0 +2.0/-2.0": "10",
-        "Slump 55.0 +10.0/-0.0": "55"
+        "Slump 55.0 +10.0/-0.0": "55",
+        "Slump 5.0 +5.0/-0.0": "5"
     }
     slump_rencana = next(
     (value for key, value in slump_mapping.items() if key in slump_value),
-    "default_value"  # fallback if no match
+    "12"  # fallback to 12 if no match
     )
     slump_test = generate_random_slump_test(slump_rencana)
     yield_value = generate_random_yield()
@@ -421,6 +445,7 @@ def refresh_and_wait(driver, wait):
     """Refresh page and wait for it to load"""
     logger.info("Refreshing page...")
     driver.refresh()
+    navigate_and_create(driver,wait)
     time.sleep(3)
     wait_for_loading_overlay_to_disappear(driver, wait)
     time.sleep(2)
@@ -453,6 +478,11 @@ def process_excel_row_with_retry(driver, wait, excel_processor, row_data, row_in
             logger.info(f"Success processing row {row_index + 1}: No. Docket {no_docket}")
             return True, no_docket, ""
             
+        except DuplicateDocketException as e:
+            logger.warning(f"Duplicate Docket detected for row {row_index + 1} (No. Docket: {no_docket}). Skipping...")
+            refresh_and_wait(driver, wait)
+            return False, no_docket, str(e)
+
         except ElementClickInterceptedException as e:
             error_message = str(e)
             if is_click_intercepted_error(error_message):
@@ -506,6 +536,11 @@ def process_duplicate_row_with_retry(driver, wait, next_row_data, next_row_index
             logger.info(f"Success processing row {next_row_index + 1}: No. Docket {no_docket}")
             return True, no_docket, ""
             
+        except DuplicateDocketException as e:
+            logger.warning(f"Duplicate Docket detected for row {next_row_index + 1} (No. Docket: {no_docket}). Skipping...")
+            refresh_and_wait(driver, wait)
+            return False, no_docket, str(e)
+
         except ElementClickInterceptedException as e:
             error_message = str(e)
             if is_click_intercepted_error(error_message):
@@ -867,10 +902,10 @@ def handle_failed_duplicate(driver, wait, results, row_index, no_docket, error_m
 
 def handle_failed_row(driver, wait, results, row_index, no_docket, error_message):
     """Handle failed row processing"""
-    if is_max_retry_error(error_message):
+    if is_max_retry_error(error_message) or "Duplicate Docket" in error_message or "Docket ini sudah pernah dibuat benda uji" in error_message:
         skipped_info = create_error_info(row_index + 1, no_docket, error_message)
         results['skipped_rows'].append(skipped_info)
-        logger.warning(f"Row {row_index + 1} skipped after max retries - No. Docket: {no_docket}")
+        logger.warning(f"Row {row_index + 1} skipped - No. Docket: {no_docket} - Reason: {error_message}")
     else:
         failure_info = create_error_info(row_index + 1, no_docket, error_message)
         results['failed_rows'].append(failure_info)

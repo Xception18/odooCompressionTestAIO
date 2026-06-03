@@ -6,9 +6,13 @@ def generate_random_slump_test(slump_rencana):
     try:
         base_value = float(slump_rencana)
         
-        # Special case for slump 55
+        # Special case for slump 55 or 5.0
         if base_value == 55:
-            result = 60 + random.uniform(-5, 5)
+            result = random.uniform(55, 75)
+        elif base_value == 5:
+            result = random.uniform(5, 10)
+        elif base_value == 18:
+            result = random.uniform(16, 20)
         else:
             result = base_value + random.uniform(-1, 2)
         
