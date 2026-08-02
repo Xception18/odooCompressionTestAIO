@@ -1,0 +1,28 @@
+# Core GUI Framework
+customtkinter==6.0.0
+
+
+# Data Processing
+pandas==2.3.0
+openpyxl==3.1.5
+xlwings==0.33.15
+
+# Database
+sqlalchemy==2.0.41
+psycopg2-binary==2.9.10
+
+# Web Automation
+selenium==4.34.2
+webdriver-manager==4.0.2
+
+# HTTP Requests
+requests==2.32.3
+
+# Logging & Utilities
+python-dotenv==1.1.1
+
+# Testing (Optional - for development)
+pytest==8.2.0
+pytest-cov==5.0.0
+pytest-mock==3.14.0
+pytest-asyncio==0.24.0

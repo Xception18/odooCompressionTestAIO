@@ -11,12 +11,9 @@ import wx
 import wx.adv
 
 from modules import db_controller as dbctrl
+from modules.logging_config import setup_logging
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - [%(levelname)s] [%(threadName)s] (%(module)s:%(lineno)d) %(message)s",
-    filename="grid_benda_uji.log",
-)
+setup_logging(log_level=logging.DEBUG, log_file="grid_benda_uji.log")
 
 
 class GridBendaUji(wx.Panel):

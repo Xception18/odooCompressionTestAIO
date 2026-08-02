@@ -71,7 +71,7 @@ def setup_daemon_logging(log_queue=None, log_level=logging.INFO, log_file=None):
     # Add file handler if file path provided
     if log_file:
         try:
-            file_handler = logging.FileHandler(log_file)
+            file_handler = logging.FileHandler(log_file, encoding='utf-8')
             file_handler.setFormatter(
                 logging.Formatter('%(asctime)s [%(levelname)s] [%(threadName)s] (%(module)s:%(lineno)d) %(message)s')
             )
@@ -188,9 +188,9 @@ class threadSinkData(threading.Thread):
         while not self.is_stopped():
             try:
                 self.logger.debug(f"Memulai siklus thread ThreadSinkron yang ke-{siklusUmum}")
-                self.logger.info(f"╔{'═' * 58}╗")
-                self.logger.info(f"║ Siklus Thread ke-{siklusUmum:3d} - {self.name:40s}║")
-                self.logger.info(f"╚{'═' * 58}╝")
+                self.logger.info(f"+{'-' * 64}+")
+                self.logger.info(f"| Siklus Thread ke-{siklusUmum:3d} - {self.name:40s}|")
+                self.logger.info(f"+{'-' * 64}+")
                 
                 counterCekData = 1
                 data = None

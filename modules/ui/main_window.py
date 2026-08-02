@@ -12,6 +12,7 @@ from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
 
 from modules.utils import resource_path, ThreadSafeLogHandler
+from modules.logging_config import setup_logging
 
 import pandas as pd
 import openpyxl
@@ -642,9 +643,9 @@ class ExcelProcessorGUI:
                 self.root.after(0, on_complete)
                 
             except Exception as e:
-                def on_error():
+                def on_error(_e=e):
                     self.rencana_process_running = False
-                    error_msg = f"❌ Error: {str(e)}"
+                    error_msg = f"Error: {str(_e)}"
                     
                     if hasattr(self, 'rencana_status'):
                         self.rencana_status.configure(text=error_msg)
@@ -658,10 +659,10 @@ class ExcelProcessorGUI:
                         self.progress.stop()
                     
                     if self.logger:
-                        self.logger.error(f"Exception in Rencana Benda Uji: {str(e)}")
+                        self.logger.error(f"Exception in Rencana Benda Uji: {str(_e)}")
                         self.logger.error(traceback.format_exc())
                     
-                    messagebox.showerror("Error", f"Terjadi kesalahan:\n{str(e)}")
+                    messagebox.showerror("Error", f"Terjadi kesalahan:\n{str(_e)}")
                 
                 self.root.after(0, on_error)
             finally:
@@ -779,24 +780,19 @@ class ExcelProcessorGUI:
             messagebox.showerror("Error", f"Failed to launch Grid Benda Uji:\n{str(e)}")
 
     def setup_logging(self):
-        """Setup logging configuration"""
-        # Configure root logger
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler("aplikasiAlatUji.log"),
-                logging.StreamHandler(sys.stdout)
-            ]
-        )
-        
-        # Configure application logger
+        """Attach GUI queue handler to root logger so all module loggers appear in GUI."""
+        setup_logging(log_file="aplikasiAlatUji.log")
         self.logger = logging.getLogger('ExcelProcessor')
         self.logger.setLevel(logging.INFO)
-        
-        # Add thread-safe handler
-        queue_handler = ThreadSafeLogHandler(self.log_queue)
-        self.logger.addHandler(queue_handler)
+
+        # Attach to root logger so every logger (e.g. 'Input_Rencana_Benda_Uji')
+        # that propagates reaches the GUI queue automatically.
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.INFO)
+        if not any(isinstance(h, ThreadSafeLogHandler) for h in root_logger.handlers):
+            queue_handler = ThreadSafeLogHandler(self.log_queue)
+            queue_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+            root_logger.addHandler(queue_handler)
 
     def process_log_queue(self):
         """Process messages from the log queue and update GUI"""

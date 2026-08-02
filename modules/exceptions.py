@@ -1,0 +1,2 @@
+class DuplicateDocketException(Exception):
+    pass
