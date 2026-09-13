@@ -1,7 +1,7 @@
 # Dokumentasi Proyek: Excel Data Processor & Odoo Integration
 
 ## Deskripsi Proyek
-Aplikasi desktop otomatisasi untuk memproses data pengujian beton (Benda Uji), mengintegrasikannya dengan file Excel, database PostgreSQL, dan sistem Odoo via web automation. GUI modern berbasis `customtkinter`.
+Aplikasi desktop otomatisasi untuk memproses data pengujian beton (Benda Uji), mengintegrasikannya dengan file Excel, database PostgreSQL, dan sistem Odoo via web automation (Playwright). GUI modern berbasis `customtkinter`.
 
 ### Fitur Utama
 1.  **Pemrosesan Data Excel**:
@@ -12,8 +12,8 @@ Aplikasi desktop otomatisasi untuk memproses data pengujian beton (Benda Uji), m
     *   Koneksi PostgreSQL (`alatujidb`) via **connection pooling** (SQLAlchemy `QueuePool`).
     *   Upload data hasil proses ke tabel database.
 3.  **Otomatisasi Web**:
-    *   **Selenium**: Input data ke `https://rmc.adhimix.web.id/benda_uji/`.
-    *   **Playwright**: Alternatif helper otomatisasi web (`playwright_helpers.py`).
+    *   **Playwright**: Input data ke `https://rmc.adhimix.web.id/benda_uji/` (`playwright_helpers.py`).
+    *   **Selenium**: Fallback untuk kompatibilitas legacy (`selenium_helpers.py`).
     *   Berjalan di background thread agar GUI tetap responsif.
 4.  **Sinkronisasi Odoo**:
     *   Sinkronisasi data background via `daemon_sync.py`.
@@ -28,7 +28,7 @@ Aplikasi desktop otomatisasi untuk memproses data pengujian beton (Benda Uji), m
 *   **OS**: Windows (disarankan).
 *   **Python**: 3.8+
 *   **Database**: PostgreSQL.
-*   **Browser**: Google Chrome (Selenium/Playwright).
+*   **Browser**: Chromium (auto-installed via Playwright), Chrome (untuk Selenium fallback).
 
 ### Pustaka Python (Dependencies)
 Lihat [`requirements.txt`](requirements.txt) untuk versi lengkap.
@@ -38,7 +38,7 @@ Lihat [`requirements.txt`](requirements.txt) untuk versi lengkap.
 | GUI | `customtkinter` |
 | Data | `pandas`, `openpyxl`, `xlwings` |
 | Database | `sqlalchemy`, `psycopg2-binary` |
-| Web Automation | `selenium`, `webdriver-manager` |
+| Web Automation | `playwright`, `selenium` (fallback), `webdriver-manager` |
 | HTTP | `requests` |
 | Config | `python-dotenv` |
 | Testing | `pytest`, `pytest-cov`, `pytest-mock`, `pytest-asyncio` |
@@ -49,6 +49,7 @@ Lihat [`requirements.txt`](requirements.txt) untuk versi lengkap.
 2.  **Install Dependencies**:
     ```bash
     pip install -r requirements.txt
+    playwright install chromium  # Install browser binaries untuk Playwright
     ```
 3.  **Konfigurasi Environment Variables (`.env`)**:
     Salin `.env` dan sesuaikan nilainya:
@@ -118,9 +119,9 @@ odooCompressionTest/
 │   ├── db_pool.py                   # Connection pool SQLAlchemy
 │   ├── daemon_sync.py               # Sinkronisasi background Odoo
 │   ├── shutdown_manager.py          # Graceful shutdown manager
-│   ├── input_rencana_benda_uji.py   # Otomatisasi Selenium
-│   ├── selenium_helpers.py          # Helper Selenium
+│   ├── input_rencana_benda_uji.py   # Otomatisasi web (Playwright/Selenium)
 │   ├── playwright_helpers.py        # Helper Playwright
+│   ├── selenium_helpers.py          # Helper Selenium
 │   ├── grid_benda_uji.py            # Tampilan Grid/Tabel
 │   └── ui/
 │       └── main_window.py           # Antarmuka GUI utama (ExcelProcessorGUI)
@@ -161,7 +162,7 @@ pytest --cov=modules --cov-report=term-missing
 
 ## Catatan Pengembang
 *   **Logika Beban**: Di `modules/excel_handler.py` class `ExcelBebanProcessor`. Sangat spesifik per jenis mutu beton dan umur (7 vs 28 hari).
-*   **Playwright vs Selenium**: Keduanya tersedia. `playwright_helpers.py` sebagai alternatif untuk halaman dinamis.
+*   **Playwright vs Selenium**: Playwright sebagai primary automation (lebih cepat, reliable). Selenium tetap tersedia untuk kompatibilitas legacy.
 *   **`config.cnf`**: Deprecated. Semua config kini via `.env` + `modules/config.py`.
-*   **`chromedriver.exe`**: Di-bundle di root. Update manual jika versi Chrome berubah, atau aktifkan `webdriver-manager` untuk auto-manage.
+*   **`chromedriver.exe`**: Hanya diperlukan untuk Selenium fallback. Di-bundle di root atau gunakan `webdriver-manager` untuk auto-manage.
 *   **Threading**: Operasi berat dijalankan di thread terpisah untuk mencegah GUI Not Responding.

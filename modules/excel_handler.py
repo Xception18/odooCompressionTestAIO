@@ -94,7 +94,8 @@ class ExcelBebanProcessor:
             'MUTU': 6,        # Kolom F -> index 6
             'UMUR': 9,        # Kolom I -> index 9
             'KODE_BENDA_UJI': 16,  # Kolom P -> index 16
-            'BEBAN': 18       # Kolom R -> index 18
+            'BEBAN': 18,      # Kolom R -> index 18
+            'KONTRAKTOR' : 2       # Kolom B -> index 2
         }
         
         # Keywords untuk pengecekan
@@ -105,17 +106,17 @@ class ExcelBebanProcessor:
         try:
             self.workbook = openpyxl.load_workbook(self.file_path)
             self.sheet = self.workbook[self.sheet_name]
-            print(f"✓ File Excel berhasil dibuka: {self.file_path}")
-            print(f"✓ Sheet aktif: {self.sheet_name}")
+            print(f"File Excel berhasil dibuka: {self.file_path}")
+            print(f"Sheet aktif: {self.sheet_name}")
             return True
         except FileNotFoundError:
-            print(f"✗ Error: File tidak ditemukan - {self.file_path}")
+            print(f"Error: File tidak ditemukan - {self.file_path}")
             return False
         except KeyError:
-            print(f"✗ Error: Sheet '{self.sheet_name}' tidak ditemukan")
+            print(f"Error: Sheet '{self.sheet_name}' tidak ditemukan")
             return False
         except Exception as e:
-            print(f"✗ Error saat membuka file: {str(e)}")
+            print(f"Error saat membuka file: {str(e)}")
             return False
     
     def get_cell_value(self, row_index: int, column_key: str):
@@ -149,6 +150,7 @@ class ExcelBebanProcessor:
         kode_benda_uji = str(self.get_cell_value(row_index, 'KODE_BENDA_UJI') or '')
         umur = self.get_cell_value(row_index, 'UMUR')
         docket = self.get_cell_value(row_index, 'DOCKET')
+        kontraktor = self.get_cell_value(row_index, 'KONTRAKTOR')
 
         if "Class A-2" in mutu:
         # Logika perhitungan berdasarkan UMUR
@@ -328,6 +330,52 @@ class ExcelBebanProcessor:
                 # Umur selain 7 atau 28
                 return "0.00"
 
+        elif "Fc-40 NFA" in mutu:
+        # Logika perhitungan berdasarkan UMUR
+            if umur == 7:
+                random_beban = random.uniform(441.12, 490.34)
+                return f"{random_beban:.2f}"        
+            elif umur == 28:
+                # Umur 28 hari dengan logika khusus
+                # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
+                if (self.previous_docket is None or self.previous_docket == 0.0 or 
+                    self.previous_beban is None or self.previous_beban == 0.0):
+                    new_beban = random.uniform(650, 750)
+                
+                # Skenario 2: Docket sama & beban != 0
+                elif self.previous_docket == docket and self.previous_beban != None:
+                    mean = 645
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-19, -8)  # Turun
+                    else:
+                        adjustment = random.uniform(8, 19)  # Naik
+                    new_beban = max(690, min(self.previous_beban + adjustment, 790))
+                # Skenario 3: Docket berbeda & mutu sama
+                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                    mean = 645
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-84, -68)  # Turun signifikan
+                    else:
+                        adjustment = random.uniform(74, 96)  # Naik signifikan
+                    new_beban = self.previous_beban + adjustment
+                    # Pastikan tetap dalam range
+                    new_beban = max(690, min(new_beban, 790))
+
+                # Skenario 4: Docket berbeda & mutu berbeda
+                elif self.previous_docket != docket and self.previous_mutu != mutu:
+                    new_beban = random.uniform(690, 790)
+                else:
+                    # Fallback (seharusnya tidak terjadi)
+                    new_beban = random.uniform(650, 750)
+                # Update tracking variables
+                self.previous_docket = str(docket) if docket is not None else None
+                self.previous_beban = new_beban
+                
+                return f"{new_beban:.2f}"
+            else:
+                # Umur selain 7 atau 28
+                return "0.00"
+
         elif "Fc-30" in mutu:
         # Logika perhitungan berdasarkan UMUR
             if umur == 7:
@@ -437,7 +485,7 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(-13, -3)  # Turun
                     else:
                         adjustment = random.uniform(3, 13)  # Naik
-                    new_beban = max(540, min(self.previous_beban + adjustment, 660))
+                    new_beban = max(560, min(self.previous_beban + adjustment, 680))
                 # Skenario 3: Docket berbeda & mutu sama
                 elif self.previous_docket != docket and self.previous_mutu == mutu:
                     mean = 600
@@ -447,11 +495,11 @@ class ExcelBebanProcessor:
                         adjustment = random.uniform(59, 76)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(540, min(new_beban, 660))
+                    new_beban = max(560, min(new_beban, 680))
                 
                 # Skenario 4: Docket berbeda & mutu berbeda
                 elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(540, 660)
+                    new_beban = random.uniform(560, 680)
                     
                 else:
                     # Fallback (seharusnya tidak terjadi)
@@ -710,14 +758,14 @@ class ExcelBebanProcessor:
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda dan mutu sama
                 elif self.previous_docket != docket:
-                    mean = 400
+                    mean = 410
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-89, -76)  # Turun signifikan
                     else:
                         adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(300, min(new_beban, 474))                  
+                    new_beban = max(346, min(new_beban, 474))                  
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(365, 475)
@@ -752,14 +800,14 @@ class ExcelBebanProcessor:
                     new_beban = max(365, min(self.previous_beban + adjustment, 475))
                 # Skenario 3: Docket berbeda dan mutu sama
                 elif self.previous_docket != docket:
-                    mean = 400
+                    mean = 410
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-89, -76)  # Turun signifikan
                     else:
                         adjustment = random.uniform(66, 75)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(300, min(new_beban, 474))                  
+                    new_beban = max(346, min(new_beban, 474))                  
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(365, 475)
@@ -828,33 +876,79 @@ class ExcelBebanProcessor:
                 # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
                 if (self.previous_docket is None or self.previous_docket == 0.0 or 
                     self.previous_beban is None or self.previous_beban == 0.0):
-                    new_beban = random.uniform(255, 305)
+                    new_beban = random.uniform(414, 460)
                 # Skenario 2: Docket sama & beban != 0
                 elif self.previous_docket == docket and self.previous_beban != None:
-                    mean = (310 + 340) / 2  # 280
+                    mean = 450
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-29, -3)  # Turun
                     else:
                         adjustment = random.uniform(3, 29)  # Naik
-                    new_beban = max(255, min(self.previous_beban + adjustment, 305))
+                    new_beban = max(385, min(self.previous_beban + adjustment, 505))
                 # Skenario 3: Docket berbeda & mutu sama
                 elif self.previous_docket != docket and self.previous_mutu == mutu:
-                    mean = (310 + 340) / 2  # 280
+                    mean = 450
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-65, -55)  # Turun signifikan
+                    else:
+                        adjustment = random.uniform(41, 51)  # Naik signifikan
+                    new_beban = self.previous_beban + adjustment
+                    # Pastikan tetap dalam range
+                    new_beban = max(385, min(new_beban, 505))
+                
+                # Skenario 4: Docket berbeda & mutu berbeda
+                elif self.previous_docket != docket and self.previous_mutu != mutu:
+                    new_beban = random.uniform(414, 460)
+                    
+                else:
+                    # Fallback (seharusnya tidak terjadi)
+                    new_beban = random.uniform(414, 460)
+                # Update tracking variables
+                self.previous_docket = str(docket) if docket is not None else None
+                self.previous_beban = new_beban
+                
+                return f"{new_beban:.2f}"
+            else:
+                # Umur selain 7 atau 28
+                return "0.00"
+
+        elif "Fc-24" in mutu:
+        # Logika perhitungan berdasarkan UMUR
+            if umur == 7:
+                random_beban = random.uniform(165.12, 215.34)
+                return f"{random_beban:.2f}"        
+            elif umur == 28:
+                # Umur 28 hari dengan logika khusus
+                # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
+                if (self.previous_docket is None or self.previous_docket == 0.0 or 
+                    self.previous_beban is None or self.previous_beban == 0.0):
+                    new_beban = random.uniform(414, 460)
+                # Skenario 2: Docket sama & beban != 0
+                elif self.previous_docket == docket and self.previous_beban != None:
+                    mean = (414 + 460) / 2
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-29, -3)  # Turun
+                    else:
+                        adjustment = random.uniform(3, 29)  # Naik
+                    new_beban = max(414, min(self.previous_beban + adjustment, 460))
+                # Skenario 3: Docket berbeda & mutu sama
+                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                    mean = (414 + 460) / 2
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-24, -8)  # Turun signifikan
                     else:
                         adjustment = random.uniform(8, 24)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(310, min(new_beban, 340))
+                    new_beban = max(414, min(new_beban, 460))
                 
                 # Skenario 4: Docket berbeda & mutu berbeda
                 elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(310, 340)
+                    new_beban = random.uniform(414, 460)
                     
                 else:
                     # Fallback (seharusnya tidak terjadi)
-                    new_beban = random.uniform(310, 340)
+                    new_beban = random.uniform(414, 460)
                 # Update tracking variables
                 self.previous_docket = str(docket) if docket is not None else None
                 self.previous_beban = new_beban
@@ -910,6 +1004,53 @@ class ExcelBebanProcessor:
                 # Umur selain 7 atau 28
                 return "0.00"
         
+        elif "Class D" in mutu and "PENTA OCEAN-TOYO-RINKAI-PP-WIKA-JAKON CONSORTIUM" in kontraktor:
+        # Logika perhitungan berdasarkan UMUR
+            if umur == 7:
+                random_beban = random.uniform(165.12, 215.34)
+                return f"{random_beban:.2f}"        
+            elif umur == 28:
+                # Umur 28 hari dengan logika khusus
+                # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
+                if (self.previous_docket is None or self.previous_docket == 0.0 or 
+                    self.previous_beban is None or self.previous_beban == 0.0):
+                    new_beban = random.uniform(283, 333)
+                
+                # Skenario 2: Docket sama & beban != 0
+                elif self.previous_docket == docket and self.previous_beban != None:
+                    mean = 346
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-24, -3)  # Turun
+                    else:
+                        adjustment = random.uniform(3, 22)  # Naik
+                    new_beban = max(283, min(self.previous_beban + adjustment, 333))
+                # Skenario 3: Docket berbeda & mutu sama
+                elif self.previous_docket != docket and self.previous_mutu == mutu:
+                    mean = 346
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-30, -11)  # Turun signifikan
+                    else:
+                        adjustment = random.uniform(9, 28)  # Naik signifikan
+                    new_beban = self.previous_beban + adjustment
+                    # Pastikan tetap dalam range
+                    new_beban = max(312, min(new_beban, 378))
+                
+                # Skenario 4: Docket berbeda & mutu berbeda
+                elif self.previous_docket != docket and self.previous_mutu != mutu:
+                    new_beban = random.uniform(312, 378)
+                    
+                else:
+                    # Fallback (seharusnya tidak terjadi)
+                    new_beban = random.uniform(312, 378)
+                # Update tracking variables
+                self.previous_docket = str(docket) if docket is not None else None
+                self.previous_beban = new_beban
+                
+                return f"{new_beban:.2f}"
+            else:
+                # Umur selain 7 atau 28
+                return "0.00"
+        
         elif "Class D" in mutu:
         # Logika perhitungan berdasarkan UMUR
             if umur == 7:
@@ -920,34 +1061,34 @@ class ExcelBebanProcessor:
                 # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
                 if (self.previous_docket is None or self.previous_docket == 0.0 or 
                     self.previous_beban is None or self.previous_beban == 0.0):
-                    new_beban = random.uniform(255, 305)
+                    new_beban = random.uniform(283, 333)
                 
                 # Skenario 2: Docket sama & beban != 0
                 elif self.previous_docket == docket and self.previous_beban != None:
-                    mean = (255 + 305) / 2  # 280
+                    mean = (283 + 333) / 2  # 280
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-29, -3)  # Turun
                     else:
                         adjustment = random.uniform(3, 29)  # Naik
-                    new_beban = max(255, min(self.previous_beban + adjustment, 305))
+                    new_beban = max(283, min(self.previous_beban + adjustment, 333))
                 # Skenario 3: Docket berbeda & mutu sama
                 elif self.previous_docket != docket and self.previous_mutu == mutu:
-                    mean = (255 + 305) / 2  # 280
+                    mean = (283 + 333) / 2  # 280
                     if self.previous_beban >= mean:
                         adjustment = random.uniform(-24, -8)  # Turun signifikan
                     else:
                         adjustment = random.uniform(8, 24)  # Naik signifikan
                     new_beban = self.previous_beban + adjustment
                     # Pastikan tetap dalam range
-                    new_beban = max(255, min(new_beban, 305))
+                    new_beban = max(283, min(new_beban, 333))
                 
                 # Skenario 4: Docket berbeda & mutu berbeda
                 elif self.previous_docket != docket and self.previous_mutu != mutu:
-                    new_beban = random.uniform(255, 305)
+                    new_beban = random.uniform(283, 333)
                     
                 else:
                     # Fallback (seharusnya tidak terjadi)
-                    new_beban = random.uniform(255, 305)
+                    new_beban = random.uniform(283, 333)
                 # Update tracking variables
                 self.previous_docket = str(docket) if docket is not None else None
                 self.previous_beban = new_beban
@@ -1089,6 +1230,53 @@ class ExcelBebanProcessor:
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(180, 250)
+                # Update tracking variables
+                self.previous_docket = str(docket) if docket is not None else None
+                self.previous_beban = new_beban
+                
+                return f"{new_beban:.2f}"
+            else:
+                # Umur selain 7 atau 28
+                return "0.00"
+
+        elif "CTB 4%" in mutu:
+        # Logika perhitungan berdasarkan UMUR
+            if umur == 7:
+                random_beban = random.uniform(79.12, 84.55)
+                return f"{random_beban:.2f}"        
+            elif umur == 28:
+                # Umur 28 hari dengan logika khusus
+                # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
+                if (self.previous_docket is None or self.previous_docket == 0.0 or 
+                    self.previous_beban is None or self.previous_beban == 0.0):
+                    new_beban = random.uniform(130, 138)
+                
+                # Skenario 2: Docket sama & beban != 0
+                elif self.previous_docket == docket and self.previous_beban != None:
+                    mean = (128 + 142) / 2
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-5, -2)  # Turun
+                    else:
+                        adjustment = random.uniform(2, 5)  # Naik
+                    new_beban = max(130, min(self.previous_beban + adjustment, 138))
+                # Skenario 3: Docket berbeda
+                elif self.previous_docket != docket:
+                    mean = (128 + 142) / 2
+                    if self.previous_beban >= mean:
+                        adjustment = random.uniform(-5, -2)  # Turun signifikan
+                    else:
+                        adjustment = random.uniform(2, 5)  # Naik signifikan
+                    new_beban = self.previous_beban + adjustment
+                    # Pastikan tetap dalam range
+                    new_beban = max(130, min(new_beban, 138))
+                
+                # Skenario 4: Docket berbeda & mutu berbeda
+                elif self.previous_docket != docket and self.previous_mutu != mutu:
+                    new_beban = random.uniform(130, 138)
+                    
+                else:
+                    # Fallback (seharusnya tidak terjadi)
+                    new_beban = random.uniform(130, 138)
                 # Update tracking variables
                 self.previous_docket = str(docket) if docket is not None else None
                 self.previous_beban = new_beban

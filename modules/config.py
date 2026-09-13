@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 try:
+    # pyrefly: ignore [missing-import]
     from dotenv import load_dotenv, find_dotenv
 except ImportError:
     # Fallback if python-dotenv not installed

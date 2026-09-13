@@ -16,8 +16,8 @@ from modules.playwright_helpers import (
     is_click_intercepted_error,
     fill_field,
     handle_duplicate_docket_error,
-    select_first_row_in_modal_and_confirm,
     quick_delete_excess_rows,
+    no_record_found,
 )
 from modules.data_generators import (
     generate_random_slump_test,
@@ -25,7 +25,7 @@ from modules.data_generators import (
     calculate_jam_sample,
 )
 from modules.excel_handler import ExcelDataProcessor
-from modules.exceptions import DuplicateDocketException
+from modules.exceptions import DuplicateDocketException, NoRecordFoundException
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(funcName)s : %(lineno)d - %(message)s')
@@ -50,7 +50,7 @@ def logger_debug(pesan):
     print(log_message, flush=True)
 
 
-def login(driver: BrowserWrapper, wait=None):
+def login(driver: BrowserWrapper):
     """Handle login process"""
     from modules.config import get_config
     config = get_config()
@@ -66,7 +66,7 @@ def login(driver: BrowserWrapper, wait=None):
     logger.info("Navigating to login page...")
     page.goto(login_url)
     logger.info("Entering credentials...")
-    page.locator("#login").wait_for(state="visible", timeout=20000)
+    page.locator("#login").wait_for(state="visible")
     page.locator("#login").fill(username)
     page.locator("#password").fill(password)
     logger.info("Clicking login button...")
@@ -75,35 +75,35 @@ def login(driver: BrowserWrapper, wait=None):
     logger.info(f"Current URL after login: {page.url}")
 
 
-def navigate_and_create(driver: BrowserWrapper, wait=None):
+def navigate_and_create(driver: BrowserWrapper):
     """Navigate to create page and click create button"""
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    wait_for_loading_overlay_to_disappear(driver)
     create_rbu_url = "https://rmc.adhimix.web.id/web#model=schedule.truck.mixer.benda.uji&view_type=list&cids=124&menu_id=669"
     logger.info("Navigating to CREATE RENCANA BENDA UJI page...")
     page = driver.page
     page.goto(create_rbu_url)
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    wait_for_loading_overlay_to_disappear(driver)
     logger.info("CREATE RENCANA BENDA UJI...")
     page.get_by_role("button", name="New").click()
 
 
-def fill_proyek_form(driver: BrowserWrapper, wait=None, row_data=None):
+def fill_proyek_form(driver: BrowserWrapper, row_data=None):
     """Fill main form fields using Excel data"""
     # Date field - from Excel column 1 (index 0)
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    wait_for_loading_overlay_to_disappear(driver)
     page = driver.page
     tgl_mulai_prod = str(row_data.iloc[0]) if len(row_data) > 0 else "None"
     logger.info(f"Filling Date form with: {tgl_mulai_prod}")
     tgl_field = page.locator("#mulai_produksi_docket_0")
-    tgl_field.wait_for(state="visible", timeout=20000)
+    tgl_field.wait_for(state="visible")
     tgl_field.fill("")
     tgl_field.fill(tgl_mulai_prod)
 
 
-def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
+def fill_docket_form(driver: BrowserWrapper, row_data=None):
     """Fill docket form using Excel data"""
     # No. Docket field - from Excel column 2 (index 1)
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    wait_for_loading_overlay_to_disappear(driver)
     page = driver.page
     no_docket = str(row_data.iloc[1]) if len(row_data) > 1 else "None"
     logger.info(f"Filling No. Docket field with: {no_docket}")
@@ -111,12 +111,12 @@ def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
     no_docket_field = page.locator("#rel_docket_0")
     no_docket_field.wait_for(state="visible")
     no_docket_field.scroll_into_view_if_needed()
-    time.sleep(1)
     no_docket_field.click()
     no_docket_field.fill("")
     no_docket_field.fill(no_docket)
 
     try:
+        no_record_found(driver, no_docket)
         # Check if autocomplete item with exact text exists
         xpath = f"//li[contains(@class, 'o-autocomplete--dropdown-item')]//a[contains(@class, 'ui-menu-item-wrapper') and normalize-space()='{no_docket}']"
         try:
@@ -129,29 +129,29 @@ def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
         if found:
             logger.info(f"Found {no_docket} in autocomplete dropdown")
             docket_link = page.locator("#rel_docket_0_0_0")
-            docket_link.wait_for(state="visible")
+            docket_link.wait_for(state="visible", timeout=500)
             docket_link.click()
-            handle_duplicate_docket_error(driver, wait)
+            handle_duplicate_docket_error(driver)
             logger.info(f"Successfully clicked on {no_docket} from autocomplete dropdown")
         else:
             logger.info(f"Element with text '{no_docket}' not found in autocomplete dropdown")
             logger.info("Using 'Search more...' option as fallback")
             search_more = page.locator("#rel_docket_0_0_1")
-            search_more.wait_for(state="visible")
+            search_more.wait_for(state="visible", timeout=500)
             search_more.click()
-            time.sleep(5)
             selector = "tr.o_data_row td.o_data_cell"
             row = page.locator(selector).first
             row.wait_for(state="visible")
             row.click()
-            handle_duplicate_docket_error(driver, wait)
+            handle_duplicate_docket_error(driver)
 
-    except DuplicateDocketException:
+    except (DuplicateDocketException, NoRecordFoundException):
         raise
     except Exception as e:
         logger.error(f"Error in docket selection: {str(e)}")
 
     # Fill remaining fields using Excel data
+    time.sleep(0.5)
     slump_value = str(row_data.iloc[6]) if len(row_data) > 6 else "12"  # Column 7 (index 6)
 
     # Extract number after "Slump" dynamically
@@ -174,7 +174,7 @@ def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
 
     # Fill remaining fields
     date_sample_field = page.locator("#date_sample_0")
-    date_sample_field.wait_for(state="visible", timeout=10000)
+    date_sample_field.wait_for(state="visible", timeout=5000)
     date_sample_field.click()
     date_sample_field.fill(jam_sample)
     page.keyboard.press("Tab")
@@ -186,7 +186,7 @@ def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
             jam_to_input = jam_sample.split(' ')[1][:5]
         except:
             pass
-
+    time.sleep(0.5)
     form_fields = [
         ("slump_rencana_0", slump_rencana, "Slump Rencana"),
         ("slump_test_0", slump_test, "Slump Test"),
@@ -195,7 +195,7 @@ def fill_docket_form(driver: BrowserWrapper, wait=None, row_data=None):
         ("jam_sample_0", jam_to_input, "Jam Sampel"),
     ]
     for field_id, value, field_name in form_fields:
-        fill_field(driver, wait, field_id, value, field_name)
+        fill_field(driver, field_id, value, field_name)
 
 
 def data_to_input(driver: BrowserWrapper, no_urut, row_data, is_first_row=False, stop_event=None):
@@ -270,7 +270,7 @@ def data_to_input(driver: BrowserWrapper, no_urut, row_data, is_first_row=False,
     #wait_for_loading_overlay_to_disappear(driver, wait=None)
 
 
-def add_table_rows(driver: BrowserWrapper, wait=None, row_data=None, stop_event=None):
+def add_table_rows(driver: BrowserWrapper, row_data=None, stop_event=None):
     """Add and fill table rows using Excel data"""
     page = driver.page
     logger.info("Processing table rows...")
@@ -290,7 +290,7 @@ def add_table_rows(driver: BrowserWrapper, wait=None, row_data=None, stop_event=
     # Get add item link
     try:
         add_item_link = page.locator("div[name='benda_uji_ids'] .o_field_x2many_list_row_add a")
-        add_item_link.wait_for(state="visible", timeout=10000)
+        add_item_link.wait_for(state="visible")
     except PlaywrightTimeoutError:
         add_item_link = page.get_by_text("Add a line", exact=True)
 
@@ -318,7 +318,7 @@ def add_table_rows(driver: BrowserWrapper, wait=None, row_data=None, stop_event=
             data_to_input(driver, no_urut, row_data, is_first_row=(no_urut == 1), stop_event=stop_event)
 
 
-def save_form(driver: BrowserWrapper, wait=None):
+def save_form(driver: BrowserWrapper):
     """Save the form"""
     page = driver.page
     logger.info("Saving Rencana Benda Uji...")
@@ -327,47 +327,47 @@ def save_form(driver: BrowserWrapper, wait=None):
     logger.info("Save button found, clicking...")
     save_button.click()
 
-def create_form(driver: BrowserWrapper, wait=None):
+def create_form(driver: BrowserWrapper):
     """Create new form"""
     page = driver.page
     logger.info("Creating new form...")
     page.get_by_role("button", name="New").click()
 
-def duplicate_form(driver: BrowserWrapper, wait=None, next_row_data=None, stop_event=None):
+def duplicate_form(driver: BrowserWrapper, next_row_data=None, stop_event=None):
     """Duplicate form for next entry with same kode_benda_uji and proyek"""
     page = driver.page
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    wait_for_loading_overlay_to_disappear(driver)
     logger.info("Click Duplicate Form...")
     page.locator("button:has(i[data-hotkey='u'])").click()
     page.get_by_role("menuitem", name="Duplicate").click()
-    fill_docket_form(driver, wait, next_row_data)
+    fill_docket_form(driver, next_row_data)
     logger.info("Input data to the table row using Excel data")
     if stop_event and stop_event.is_set():
         driver.quit()
         return
-    add_table_rows(driver, wait, next_row_data, stop_event=stop_event)
+    add_table_rows(driver, next_row_data, stop_event=stop_event)
 
 
-def alternative_form(driver: BrowserWrapper, wait=None, next_row_data=None, stop_event=None):
-    wait_for_loading_overlay_to_disappear(driver, wait)
+def alternative_form(driver: BrowserWrapper, next_row_data=None, stop_event=None):
+    wait_for_loading_overlay_to_disappear(driver)
     logger.info("Updating duplicated form with next row data...")
-    fill_docket_form(driver, wait, next_row_data)
+    fill_docket_form(driver, next_row_data)
     logger.info("Input data to the table row using Excel data")
     if stop_event and stop_event.is_set():
         driver.quit()
         return
-    add_table_rows(driver, wait, next_row_data, stop_event=stop_event)
+    add_table_rows(driver, next_row_data, stop_event=stop_event)
 
 
-def refresh_and_wait(driver: BrowserWrapper, wait=None):
+def refresh_and_wait(driver: BrowserWrapper):
     """Refresh page and wait for it to load"""
     logger.info("Refreshing page...")
     driver.page.reload()
-    navigate_and_create(driver, wait)
-    wait_for_loading_overlay_to_disappear(driver, wait)
+    navigate_and_create(driver)
+    wait_for_loading_overlay_to_disappear(driver)
 
 
-def process_excel_row_with_retry(driver: BrowserWrapper, wait=None, excel_processor=None, row_data=None, row_index=0, max_retries=3, stop_event=None):
+def process_excel_row_with_retry(driver: BrowserWrapper, excel_processor=None, row_data=None, row_index=0, max_retries=3, stop_event=None):
     """Process single Excel row with retry logic for click intercepted errors"""
     no_docket = row_data.get('No. Docket', 'Unknown')
     logger.info(f"Processing Excel row {row_index + 1} - No. Docket: {no_docket}")
@@ -377,27 +377,27 @@ def process_excel_row_with_retry(driver: BrowserWrapper, wait=None, excel_proces
             if stop_event and stop_event.is_set():
                 driver.quit()
                 return False, no_docket, "Stopped by user"
-            navigate_and_create(driver, wait)
+            navigate_and_create(driver)
 
-            wait_for_loading_overlay_to_disappear(driver, wait)
-            fill_proyek_form(driver, wait, row_data)
+            wait_for_loading_overlay_to_disappear(driver)
+            fill_proyek_form(driver, row_data)
 
-            wait_for_loading_overlay_to_disappear(driver, wait)
-            fill_docket_form(driver, wait, row_data)
+            wait_for_loading_overlay_to_disappear(driver)
+            fill_docket_form(driver, row_data)
 
-            wait_for_loading_overlay_to_disappear(driver, wait)
+            wait_for_loading_overlay_to_disappear(driver)
             if stop_event and stop_event.is_set():
                 driver.quit()
                 return False, no_docket, "Stopped by user"
-            add_table_rows(driver, wait, row_data, stop_event=stop_event)
+            add_table_rows(driver, row_data, stop_event=stop_event)
 
-            save_form(driver, wait)
+            save_form(driver)
             logger.info(f"Success processing row {row_index + 1}: No. Docket {no_docket}")
             return True, no_docket, ""
 
-        except DuplicateDocketException as e:
-            logger.warning(f"Duplicate Docket detected for row {row_index + 1} (No. Docket: {no_docket}). Skipping...")
-            refresh_and_wait(driver, wait)
+        except (DuplicateDocketException, NoRecordFoundException) as e:
+            logger.warning(f"Duplicate or No Record Found detected for row {row_index + 1} (No. Docket: {no_docket}). Skipping...")
+            refresh_and_wait(driver)
             return False, no_docket, str(e)
 
         except PlaywrightError as e:
@@ -406,7 +406,7 @@ def process_excel_row_with_retry(driver: BrowserWrapper, wait=None, excel_proces
                 logger.warning(f"Click intercepted on attempt {attempt + 1}/{max_retries} for row {row_index + 1} (No. Docket: {no_docket})")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying after refresh for No. Docket: {no_docket}")
-                    refresh_and_wait(driver, wait)
+                    refresh_and_wait(driver)
                     continue
                 else:
                     logger.error(f"Max retries reached for row {row_index + 1} (No. Docket: {no_docket}). Skipping...")
@@ -419,7 +419,7 @@ def process_excel_row_with_retry(driver: BrowserWrapper, wait=None, excel_proces
             logger.warning(f"Click intercepted detected on attempt {attempt + 1}/{max_retries} for row {row_index + 1}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying after refresh for No. Docket: {no_docket}")
-                refresh_and_wait(driver, wait)
+                refresh_and_wait(driver)
                 continue
             else:
                 logger.error(f"Max retries reached for row {row_index + 1}. Skipping...")
@@ -428,7 +428,7 @@ def process_excel_row_with_retry(driver: BrowserWrapper, wait=None, excel_proces
     return False, no_docket, "Unknown error after all retries"
 
 
-def process_duplicate_row_with_retry(driver: BrowserWrapper, wait=None, next_row_data=None, next_row_index=0, max_retries=3, stop_event=None):
+def process_duplicate_row_with_retry(driver: BrowserWrapper, next_row_data=None, next_row_index=0, max_retries=3, stop_event=None):
     """Process next row using duplicate form with retry logic"""
     no_docket = next_row_data.get('No. Docket', 'Unknown')
     logger.info(f"Processing row {next_row_index + 1} using duplicate form - No. Docket: {no_docket}")
@@ -439,18 +439,18 @@ def process_duplicate_row_with_retry(driver: BrowserWrapper, wait=None, next_row
         try:
             if use_duplicate:
                 logger.info(f"Using duplicate_form on attempt {attempt + 1}")
-                duplicate_form(driver, wait, next_row_data, stop_event=stop_event)
+                duplicate_form(driver, next_row_data, stop_event=stop_event)
             else:
                 logger.info(f"Using alternative_form on attempt {attempt + 1}")
-                alternative_form(driver, wait, next_row_data, stop_event=stop_event)
+                alternative_form(driver, next_row_data, stop_event=stop_event)
 
-            save_form(driver, wait)
+            save_form(driver)
             logger.info(f"Success processing row {next_row_index + 1}: No. Docket {no_docket}")
             return True, no_docket, ""
 
-        except DuplicateDocketException as e:
-            logger.warning(f"Duplicate Docket detected for row {next_row_index + 1} (No. Docket: {no_docket}). Skipping...")
-            refresh_and_wait(driver, wait)
+        except (DuplicateDocketException, NoRecordFoundException) as e:
+            logger.warning(f"Duplicate or No Record Found detected for row {next_row_index + 1} (No. Docket: {no_docket}). Skipping...")
+            refresh_and_wait(driver)
             return False, no_docket, str(e)
 
         except PlaywrightError as e:
@@ -459,9 +459,9 @@ def process_duplicate_row_with_retry(driver: BrowserWrapper, wait=None, next_row
                 logger.warning(f"Click intercepted on attempt {attempt + 1}/{max_retries} for row {next_row_index + 1}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying after refresh for No. Docket: {no_docket}")
-                    refresh_and_wait(driver, wait)
-                    navigate_and_create(driver, wait)
-                    fill_proyek_form(driver, wait, next_row_data)
+                    refresh_and_wait(driver)
+                    navigate_and_create(driver)
+                    fill_proyek_form(driver, next_row_data)
                     if use_duplicate:
                         use_duplicate = False
                         logger.info("Switching from duplicate_form to alternative_form strategy")
@@ -477,9 +477,9 @@ def process_duplicate_row_with_retry(driver: BrowserWrapper, wait=None, next_row
             logger.warning(f"Click intercepted detected on attempt {attempt + 1}/{max_retries}")
             if attempt < max_retries - 1:
                 logger.info(f"Retrying after refresh for No. Docket: {no_docket}")
-                refresh_and_wait(driver, wait)
-                navigate_and_create(driver, wait)
-                fill_proyek_form(driver, wait, next_row_data)
+                refresh_and_wait(driver)
+                navigate_and_create(driver)
+                fill_proyek_form(driver, next_row_data)
                 if use_duplicate:
                     use_duplicate = False
                     logger.info("Exception occurred, switching from duplicate_form to alternative_form strategy")
@@ -491,16 +491,16 @@ def process_duplicate_row_with_retry(driver: BrowserWrapper, wait=None, next_row
     return False, no_docket, "Unknown error after all retries"
 
 
-def prepare_for_next_row(driver: BrowserWrapper, wait=None, excel_processor=None, row_index=0):
+def prepare_for_next_row(driver: BrowserWrapper, excel_processor=None, row_index=0):
     """Prepare for next row - either duplicate or create new form"""
     try:
-        wait_for_loading_overlay_to_disappear(driver, wait)
+        wait_for_loading_overlay_to_disappear(driver)
         if excel_processor.should_duplicate(row_index):
             logger.info("Next row has same kode_benda_uji and proyek - will use duplicate")
             return "duplicate"
         else:
             logger.info("Next row has different kode_benda_uji or proyek - creating new form")
-            create_form(driver, wait)
+            create_form(driver)
             return "create"
     except Exception as e:
         logger.error(f"Error preparing for next row after {row_index + 1}: {e}")
@@ -566,13 +566,12 @@ def initialize_components(excel_file_path):
         return None, None
 
 
-def process_all_rows(driver: BrowserWrapper, wait=None, excel_processor=None, stop_event=None):
+def process_all_rows(driver: BrowserWrapper, excel_processor=None, stop_event=None):
     """
     Process all rows from Excel with proper tracking and stop event support
 
     Args:
         driver: BrowserWrapper instance
-        wait: unused (kept for signature compatibility)
         excel_processor: ExcelDataProcessor instance
         stop_event: threading.Event object for stopping the process (optional)
 
@@ -618,7 +617,7 @@ def process_all_rows(driver: BrowserWrapper, wait=None, excel_processor=None, st
 
         try:
             success, processed_no_docket, error_message = process_excel_row_with_retry(
-                driver, wait, excel_processor, row_data, row_index, stop_event=stop_event
+                driver, excel_processor, row_data, row_index, stop_event=stop_event
             )
         except Exception as e:
             logger.error(f"Driver error while processing row {row_index + 1}: {e}")
@@ -635,12 +634,12 @@ def process_all_rows(driver: BrowserWrapper, wait=None, excel_processor=None, st
 
         if success:
             row_index = handle_successful_row(
-                driver, wait, excel_processor, results,
+                driver, excel_processor, results,
                 row_index, total_rows, processed_no_docket, stop_event
             )
         else:
             handle_failed_row(
-                driver, wait, results, row_index,
+                driver, results, row_index,
                 processed_no_docket, error_message
             )
 
@@ -676,7 +675,7 @@ def process_all_rows(driver: BrowserWrapper, wait=None, excel_processor=None, st
     return results
 
 
-def handle_successful_row(driver: BrowserWrapper, wait, excel_processor, results,
+def handle_successful_row(driver: BrowserWrapper, excel_processor, results,
                           row_index, total_rows, processed_no_docket, stop_event=None):
     """Handle successful row processing and potential duplicates with stop event support"""
     success_info = create_row_info(row_index + 1, processed_no_docket)
@@ -694,7 +693,7 @@ def handle_successful_row(driver: BrowserWrapper, wait, excel_processor, results
 
     if row_index + 1 < total_rows:
         return handle_next_row_preparation(
-            driver, wait, excel_processor, results,
+            driver, excel_processor, results,
             row_index, total_rows, stop_event
         )
     else:
@@ -703,7 +702,7 @@ def handle_successful_row(driver: BrowserWrapper, wait, excel_processor, results
     return row_index
 
 
-def handle_next_row_preparation(driver: BrowserWrapper, wait, excel_processor, results,
+def handle_next_row_preparation(driver: BrowserWrapper, excel_processor, results,
                                 row_index, total_rows, stop_event=None):
     """Handle preparation for next row and potential duplicate processing with stop event support"""
     if stop_event and stop_event.is_set():
@@ -712,11 +711,11 @@ def handle_next_row_preparation(driver: BrowserWrapper, wait, excel_processor, r
         driver.quit()
         return row_index
 
-    next_action = prepare_for_next_row(driver, wait, excel_processor, row_index)
+    next_action = prepare_for_next_row(driver, excel_processor, row_index)
 
     if next_action == "duplicate":
         return process_duplicate_sequence(
-            driver, wait, excel_processor, results,
+            driver, excel_processor, results,
             row_index, total_rows, stop_event
         )
     elif next_action == "error":
@@ -725,7 +724,7 @@ def handle_next_row_preparation(driver: BrowserWrapper, wait, excel_processor, r
     return row_index
 
 
-def process_duplicate_sequence(driver: BrowserWrapper, wait, excel_processor, results,
+def process_duplicate_sequence(driver: BrowserWrapper, excel_processor, results,
                                row_index, total_rows, stop_event=None):
     """Process sequence of duplicate rows with stop event support"""
     current_row = row_index
@@ -754,7 +753,7 @@ def process_duplicate_sequence(driver: BrowserWrapper, wait, excel_processor, re
             break
 
         duplicate_success, duplicate_no_docket, duplicate_error = process_duplicate_row_with_retry(
-            driver, wait, next_row_data, current_row, stop_event=stop_event
+            driver, next_row_data, current_row, stop_event=stop_event
         )
 
         if stop_event and stop_event.is_set():
@@ -772,13 +771,13 @@ def process_duplicate_sequence(driver: BrowserWrapper, wait, excel_processor, re
                     results['stopped'] = True
                     driver.quit()
                     break
-                next_action = prepare_for_next_row(driver, wait, excel_processor, current_row)
+                next_action = prepare_for_next_row(driver, excel_processor, current_row)
                 if next_action != "duplicate":
                     break
             else:
                 break
         else:
-            handle_failed_duplicate(driver, wait, results, current_row,
+            handle_failed_duplicate(driver, results, current_row,
                                     duplicate_no_docket, duplicate_error)
             break
 
@@ -795,7 +794,7 @@ def handle_successful_duplicate(results, row_index, no_docket):
     logger_debug(f"Row {row_index + 1} successfully processed via duplicate - No. Docket: {no_docket}")
 
 
-def handle_failed_duplicate(driver: BrowserWrapper, wait, results, row_index, no_docket, error_message):
+def handle_failed_duplicate(driver: BrowserWrapper, results, row_index, no_docket, error_message):
     """Handle failed duplicate processing"""
     if is_max_retry_error(error_message):
         skipped_info = create_error_info(row_index + 1, no_docket, error_message)
@@ -807,12 +806,12 @@ def handle_failed_duplicate(driver: BrowserWrapper, wait, results, row_index, no
         results['last_failure_info'] = failure_info
 
     log_failed_duplicate(row_index + 1, no_docket, error_message)
-    refresh_and_wait(driver, wait)
+    refresh_and_wait(driver)
 
 
-def handle_failed_row(driver: BrowserWrapper, wait, results, row_index, no_docket, error_message):
+def handle_failed_row(driver: BrowserWrapper, results, row_index, no_docket, error_message):
     """Handle failed row processing"""
-    if is_max_retry_error(error_message) or "Duplicate Docket" in error_message or "Docket ini sudah pernah dibuat benda uji" in error_message:
+    if is_max_retry_error(error_message) or "Duplicate Docket" in error_message or "Docket ini sudah pernah dibuat benda uji" in error_message or "No record found for" in error_message:
         skipped_info = create_error_info(row_index + 1, no_docket, error_message)
         results['skipped_rows'].append(skipped_info)
         logger.warning(f"Row {row_index + 1} skipped - No. Docket: {no_docket} - Reason: {error_message}")
@@ -949,7 +948,7 @@ def run_with_custom_path_and_stop(excel_path, stop_event=None):
                 'stopped': True,
             }
 
-        login(driver, wait=None)
+        login(driver)
 
         if stop_event and stop_event.is_set():
             logger.warning("STOP signal received after login")
@@ -960,7 +959,7 @@ def run_with_custom_path_and_stop(excel_path, stop_event=None):
                 'stopped': True,
             }
 
-        results = process_all_rows(driver, wait=None, excel_processor=excel_processor, stop_event=stop_event)
+        results = process_all_rows(driver, excel_processor=excel_processor, stop_event=stop_event)
 
         return_results = {
             'successful_rows': len(results['successful_rows']),

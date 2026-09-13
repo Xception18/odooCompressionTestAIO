@@ -169,7 +169,7 @@ class threadSinkData(threading.Thread):
             True if sleep completed, False if interrupted
         """
         # Break sleep into 0.5 second chunks for faster response to stop
-        chunks = int(seconds * 2)
+        chunks = int(seconds * 1)
         for _ in range(chunks):
             if self.is_stopped():
                 return False
@@ -485,7 +485,7 @@ def kirimDataPost(bendaUji):
         
         response = requests.post(urlKirim, json=datanya, timeout=30)
         logger.info(f"Response status code: {response.status_code}")
-        logger.debug(f"Response content: {response.text[:200]}")  # First 200 chars
+        logger.debug(f"Response content: {response.text[:200]}")
         
         return response
         
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     fileConfig = resource_path("config.cnf")
     config = configparser.RawConfigParser()
     config.read(fileConfig)
-    tunda = config.get("daemon", "delay") if config.has_option("daemon", "delay") else '2'
+    tunda = config.get("daemon", "delay") if config.has_option("daemon", "delay") else '0.5'
     
     logger = get_daemon_logger()
     logger.info("Starting daemon in standalone mode")
@@ -527,7 +527,7 @@ if __name__ == "__main__":
     try:
         # Keep main thread alive
         while daemon.is_alive():
-            time.sleep(1)
+            time.sleep(0.5)
     except KeyboardInterrupt:
         print("\nKeyboard interrupt received - stopping daemon...")
         daemon.stop()

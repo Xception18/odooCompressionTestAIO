@@ -13,6 +13,7 @@ Migration Status: BACKWARD COMPATIBLE
 
 import logging
 from modules.db_pool import get_db_pool, test_connection
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
 import psycopg2
 import psycopg2.extras

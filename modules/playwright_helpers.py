@@ -5,7 +5,7 @@ try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
 except ImportError:  # pragma: no cover
     raise RuntimeError("playwright is required: pip install playwright && playwright install chromium")
-from modules.exceptions import DuplicateDocketException
+from modules.exceptions import DuplicateDocketException, NoRecordFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ def _ms(seconds: float) -> int:
     return int(seconds * 1000)
 
 
-def wait_for_loading_overlay_to_disappear(driver: BrowserWrapper, wait=None, max_wait=20):
+def wait_for_loading_overlay_to_disappear(driver: BrowserWrapper):
     """Wait for blockUI loading overlay to disappear."""
     page = driver.page
     loading_selectors = [
@@ -158,7 +158,7 @@ def is_click_intercepted_error(error_message: str) -> bool:
     )
 
 
-def handle_duplicate_docket_error(driver: BrowserWrapper, wait=None):
+def handle_duplicate_docket_error(driver: BrowserWrapper):
     page = driver.page
     try:
         error_modal = page.locator("div.modal-content.o_error_dialog")
@@ -170,7 +170,7 @@ def handle_duplicate_docket_error(driver: BrowserWrapper, wait=None):
                 ".modal-footer button.btn-primary, .modal-footer button.btn-secondary"
             ).first
             close_btn.click()
-            error_modal.wait_for(state="hidden", timeout=1000)
+            error_modal.wait_for(state="hidden")
             raise DuplicateDocketException("Docket ini sudah pernah dibuat benda uji !")
     except PlaywrightTimeoutError:
         pass
@@ -179,14 +179,36 @@ def handle_duplicate_docket_error(driver: BrowserWrapper, wait=None):
     except Exception as e:
         logger.error(f"An unexpected error occurred while checking for modals: {e}")
 
+def no_record_found(driver: BrowserWrapper, no_docket):
+    page = driver.page
+    try:
+        no_record_selector = "li.o_m2o_no_result a#rel_docket_0_0_0"
+        no_record_found = False
+        try:
+            # Short timeout because we are checking if it appears after typing
+            page.wait_for_selector(no_record_selector, state="visible", timeout=1000)
+            no_record_found = True
+        except:
+            no_record_found = False
 
-def fill_field(driver: BrowserWrapper, wait=None, locator: str = "", value="", field_name: str = ""):
+        if no_record_found:
+            logger.warning(f"No record found for '{no_docket}'. Skipping to next.")
+            raise NoRecordFoundException(f"No record found for '{no_docket}'. Skipping to next.")
+    except PlaywrightTimeoutError:
+        pass
+    except NoRecordFoundException:
+        raise
+    except Exception as e:
+        logger.error(f"An unexpected error occurred while checking for modals: {e}")
+    
+
+def fill_field(driver: BrowserWrapper, locator: str = "", value="", field_name: str = ""):
     """Generic function to fill form fields (ID-based)."""
     page = driver.page
     logger.info(f"Filling {field_name} field with value: {value}")
     try:
         field = page.locator(f"#{locator}")
-        field.wait_for(state="visible", timeout=10000)
+        field.wait_for(state="visible")
         field.scroll_into_view_if_needed()
         field.click()
         field.fill("")
@@ -196,9 +218,7 @@ def fill_field(driver: BrowserWrapper, wait=None, locator: str = "", value="", f
         # Verify value
         try:
             page.wait_for_function(
-                f"document.getElementById('{locator}')?.value?.includes('{str(value)}')",
-                timeout=5000,
-            )
+                f"document.getElementById('{locator}')?.value?.includes('{str(value)}')")
             logger.info(f"{field_name} value entered successfully")
         except PlaywrightTimeoutError:
             logger.warning(f"{field_name} field did not reflect the typed value immediately")
@@ -209,7 +229,6 @@ def fill_field(driver: BrowserWrapper, wait=None, locator: str = "", value="", f
 
 def select_first_row_in_modal_and_confirm(
     driver: BrowserWrapper,
-    wait=None,
     row_text: str | None = None,
     absolute_xpath: str | None = None,
 ):
@@ -223,7 +242,7 @@ def select_first_row_in_modal_and_confirm(
             # Find visible modal
             modal_sel = "div.modal.show, div.modal.in, div.modal-content, div.modal[style*='display: block']"
             modal = page.locator(modal_sel).last
-            modal.wait_for(state="visible", timeout=10000)
+            modal.wait_for(state="visible")
 
             # Find table in modal
             table = None

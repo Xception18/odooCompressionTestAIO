@@ -7,7 +7,9 @@ import time
 # Add project root to sys.path so we can import from modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# pyrefly: ignore [missing-import]
 import wx
+# pyrefly: ignore [missing-import]
 import wx.adv
 
 from modules import db_controller as dbctrl
