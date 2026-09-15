@@ -1,4 +1,3 @@
-import configparser
 import logging
 import ssl
 import threading
@@ -9,6 +8,8 @@ import queue
 
 import psycopg2
 import requests
+
+from modules.config import EnvironmentConfig
 
 # Global logger variable for the daemon
 daemon_logger = None
@@ -316,14 +317,12 @@ def cekData():
     logger = get_daemon_logger()
     try:
         logger.debug("Memulai proses cekData()")
-        config = configparser.RawConfigParser()
-        fileConfig = resource_path("config.cnf")
-        config.read(fileConfig)
+        config = EnvironmentConfig()
         
-        datab = config.get("data", "database")
-        hosted = config.get("data", "host")
-        login = config.get("data", "user")
-        passed = config.get("data", "password")
+        datab = config.get_db_name()
+        hosted = config.get_db_host()
+        login = config.get_db_user()
+        passed = config.get_db_password()
         
         conn = f"dbname={datab} user={login} host={hosted} password={passed}"
         logger.debug(f"Koneksi database: host={hosted}, database={datab}, user={login}")
@@ -367,14 +366,12 @@ def cekSinkronLokal(bjdt_id):
     try:
         logger.debug(f"Memulai proses cekSinkronLokal() untuk ID: {bjdt_id}")
         
-        config = configparser.RawConfigParser()
-        fileConfig = resource_path("config.cnf")
-        config.read(fileConfig)
+        config = EnvironmentConfig()
         
-        datab = config.get("data", "database")
-        hosted = config.get("data", "host")
-        login = config.get("data", "user")
-        passed = config.get("data", "password")
+        datab = config.get_db_name()
+        hosted = config.get_db_host()
+        login = config.get_db_user()
+        passed = config.get_db_password()
         
         conn = f"dbname={datab} user={login} host={hosted} password={passed}"
         konekdb = psycopg2.connect(conn)
@@ -413,14 +410,12 @@ def sinkUpdateLokal(nomer, urut):
     try:
         logger.debug(f"Memulai proses sinkUpdateLokal() untuk nomer: {nomer}, urut: {urut}")
         
-        config = configparser.RawConfigParser()
-        fileConfig = resource_path("config.cnf")
-        config.read(fileConfig)
+        config = EnvironmentConfig()
         
-        datab = config.get("data", "database")
-        hosted = config.get("data", "host")
-        login = config.get("data", "user")
-        passed = config.get("data", "password")
+        datab = config.get_db_name()
+        hosted = config.get_db_host()
+        login = config.get_db_user()
+        passed = config.get_db_password()
         
         conn = f"dbname={datab} user={login} host={hosted} password={passed}"
         konekdb = psycopg2.connect(conn)
@@ -458,11 +453,8 @@ def kirimDataPost(bendaUji):
     try:
         logger.debug("Memulai proses kirimDataPost()")
         
-        fileConfig = resource_path("config.cnf")
-        config = configparser.RawConfigParser()
-        config.read(fileConfig)
-        
-        urlKirim = config.get("webser", "webser_hasilUji")
+        # ponytail: webser_hasilUji hardcoded from .env, add webservice config methods to EnvironmentConfig if need dynamic URLs
+        urlKirim = os.getenv('WEBSER_HASIL_UJI', 'https://rmc.adhimix.web.id/benda_uji/update/')
         
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
@@ -513,10 +505,8 @@ if __name__ == "__main__":
     # Setup logging for standalone execution
     setup_daemon_logging(log_file="daemonSync.log", log_level=logging.DEBUG)
     
-    fileConfig = resource_path("config.cnf")
-    config = configparser.RawConfigParser()
-    config.read(fileConfig)
-    tunda = config.get("daemon", "delay") if config.has_option("daemon", "delay") else '0.5'
+    # ponytail: daemon delay hardcoded, add to .env as DAEMON_DELAY if needed
+    tunda = os.getenv('DAEMON_DELAY', '0.5')
     
     logger = get_daemon_logger()
     logger.info("Starting daemon in standalone mode")
