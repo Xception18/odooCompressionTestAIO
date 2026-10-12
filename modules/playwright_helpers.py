@@ -106,8 +106,14 @@ class BrowserWrapper:
         return self.page.locator(value)
 
 
-def setup_driver() -> BrowserWrapper:
-    """Setup Playwright browser (Chrome/Chromium). Drop-in for Selenium setup_driver()."""
+def setup_driver(session_token: str = None) -> BrowserWrapper:
+    """
+    Setup Playwright browser (Chrome/Chromium). Drop-in for Selenium setup_driver().
+    
+    Args:
+        session_token: Optional session token for token-based auth. If provided,
+                      sets the token as a cookie before navigating to the app.
+    """
     pw = sync_playwright().start()
     browser = pw.chromium.launch(
         channel="chrome",  # uses installed Chrome; falls back to bundled Chromium if absent
@@ -115,6 +121,25 @@ def setup_driver() -> BrowserWrapper:
         args=["--no-sandbox", "--disable-dev-shm-usage", "--start-maximized"],
     )
     page = browser.new_page(no_viewport=True)
+    
+    # If token provided, set it as auth cookie before any navigation
+    if session_token:
+        logger.info("Setting session token as authentication cookie...")
+        # Visit domain first to set cookie
+        page.goto("https://rmc.adhimix.web.id/")
+        page.context.add_cookies([
+            {
+                "name": "session_id",
+                "value": session_token,
+                "domain": "rmc.adhimix.web.id",
+                "path": "/",
+                "httpOnly": False,
+                "secure": False,  # Set True for HTTPS only
+                "sameSite": "Lax",
+            }
+        ])
+        logger.info("✓ Session token cookie set successfully")
+    
     wrapper = BrowserWrapper(pw, browser, page)
     wrapper.maximize_window()
     return wrapper

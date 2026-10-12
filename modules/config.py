@@ -141,6 +141,11 @@ class EnvironmentConfig:
             logger.warning("SELENIUM_PASSWORD not set in environment variables")
         return password
     
+    @staticmethod
+    def get_session_token() -> Optional[str]:
+        """Get session token for token-based auth (alternative to username/password)"""
+        return os.getenv('SESSION_TOKEN')
+    
     # ========================================================================
     # APPLICATION CONFIGURATION
     # ========================================================================
@@ -187,11 +192,12 @@ class EnvironmentConfig:
         if not config.get_db_password():
             missing.append('DB_PASSWORD')
         
-        if not config.get_selenium_user():
-            missing.append('SELENIUM_USER')
+        # For web automation: either token OR username+password required
+        has_token = bool(config.get_session_token())
+        has_credentials = bool(config.get_selenium_user() and config.get_selenium_password())
         
-        if not config.get_selenium_password():
-            missing.append('SELENIUM_PASSWORD')
+        if not has_token and not has_credentials:
+            missing.append('SESSION_TOKEN or (SELENIUM_USER + SELENIUM_PASSWORD)')
         
         if missing:
             error_msg = f"Missing required environment variables: {', '.join(missing)}"

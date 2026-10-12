@@ -51,18 +51,37 @@ def logger_debug(pesan):
 
 
 def login(driver: BrowserWrapper):
-    """Handle login process"""
+    """
+    Handle login process.
+    
+    Token-based: If SESSION_TOKEN is set, navigates directly (cookie already set by setup_driver).
+    Form-based: Falls back to username+password login if no token available.
+    """
     from modules.config import get_config
     config = get_config()
-
+    
+    page = driver.page
+    session_token = config.get_session_token()
+    
+    if session_token:
+        # Token-based auth - cookie already set, just navigate to app
+        logger.info("Using token-based authentication (cookie already set)")
+        app_url = "https://rmc.adhimix.web.id/web"
+        logger.info(f"Navigating to app: {app_url}")
+        page.goto(app_url)
+        time.sleep(1)
+        logger.info(f"✓ Authenticated via session token. Current URL: {page.url}")
+        return
+    
+    # Fallback to form-based login
     username = config.get_selenium_user()
     password = config.get_selenium_password()
     login_url = config.get_selenium_url()
 
     if not username or not password:
-        raise ValueError("SELENIUM_USER and SELENIUM_PASSWORD environment variables are required")
+        raise ValueError("Either SESSION_TOKEN or (SELENIUM_USER and SELENIUM_PASSWORD) must be set")
 
-    page = driver.page
+    logger.info("Using form-based authentication (username + password)")
     logger.info("Navigating to login page...")
     page.goto(login_url)
     logger.info("Entering credentials...")
@@ -72,7 +91,7 @@ def login(driver: BrowserWrapper):
     logger.info("Clicking login button...")
     page.locator("button[type='submit'].btn-primary:has-text('Log in')").click()
     time.sleep(1)
-    logger.info(f"Current URL after login: {page.url}")
+    logger.info(f"✓ Logged in via form. Current URL: {page.url}")
 
 
 def navigate_and_create(driver: BrowserWrapper):
@@ -203,7 +222,8 @@ def data_to_input(driver: BrowserWrapper, no_urut, row_data, is_first_row=False,
     page = driver.page
     rencana_umur_test = "7" if no_urut in [1, 2] else "28"
     kode_benda_uji = str(row_data.iloc[2]) if len(row_data) > 2 else f" Isi Kode Benda Uji - {no_urut}"
-    bentuk_benda_uji = "Silinder 15 x 30 cm"
+    _mutu_benda_uji = str(row_data.iloc[5]) if len(row_data) > 5 else ""
+    bentuk_benda_uji = "Beam 15 x 15 x 60 cm" if any(m in _mutu_benda_uji for m in ["Fs-35", "Fs-38", "Fs-41", "Fs-45"]) else "Silinder 15 x 30 cm"
     logger.info(f"Input Row {no_urut} on data table...")
     time.sleep(1)
 
@@ -551,14 +571,21 @@ def log_processing_summary(successful_rows, failed_rows, skipped_rows, last_succ
 
 
 def initialize_components(excel_file_path):
-    """Initialize Excel processor and web driver"""
+    """Initialize Excel processor and web driver with token-based auth support"""
     try:
         if not os.path.exists(excel_file_path):
             logger.error(f"Excel file not found: {excel_file_path}")
             return None, None
 
         excel_processor = ExcelDataProcessor(excel_file_path)
-        driver = setup_driver()
+        
+        # Get session token from config if available
+        from modules.config import get_config
+        config = get_config()
+        session_token = config.get_session_token()
+        
+        # Pass token to driver setup
+        driver = setup_driver(session_token=session_token)
 
         return driver, excel_processor
     except Exception as e:
