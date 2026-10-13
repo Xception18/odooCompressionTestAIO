@@ -1,0 +1,8 @@
+# This folder contains web migration project files
+# 
+# Structure:
+# - docs/: Complete migration documentation
+# - backend/: FastAPI backend (to be created)
+# - frontend/: React frontend (to be created)
+#
+# See README.md for quick start guide
