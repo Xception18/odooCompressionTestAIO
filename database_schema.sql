@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_pengujian_sinkron ON pengujian(sinkron);
 -- nilaikn      : Hasil pembacaan beban (kN)
 -- beratbenda   : Berat benda uji
 -- tiperetak    : Kode tipe keretakan
--- sinkron      : Flag sinkronisasi ke Odoo (misal: 'N' belum, 'Y' sudah)
+-- sinkron      : Flag sinkronisasi ke Odoo (misal: 'B' belum, 'S' sudah)
 -- idbendauji   : ID referensi benda uji
 -- tglrencanauji: Tanggal rencana pengujian
 -- bujnama      : Jenis benda uji

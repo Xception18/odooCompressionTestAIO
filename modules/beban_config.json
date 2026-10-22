@@ -1,4 +1,66 @@
 {
+  "Fs-38": {
+    "umur_7": {
+      "min": 23.01,
+      "max": 25.5
+    },
+    "umur_28": {
+      "initial": {
+        "min": 28.9,
+        "max": 31.5
+      },
+      "mean": 30.0,
+      "same_docket_adjust_up": {
+        "min": -1.0,
+        "max": 1.0
+      },
+      "same_docket_adjust_down": {
+        "min": 1.0,
+        "max": -1.0
+      },
+      "diff_docket_adjust_up": {
+        "min": -1.0,
+        "max": 1.0
+      },
+      "diff_docket_adjust_down": {
+        "min": 1.0,
+        "max": -1.0
+      },
+      "range_min": 28.0,
+      "range_max": 31.0
+    }
+  },
+  "Fs-35": {
+    "umur_7": {
+      "min": 21.6,
+      "max": 22.99
+    },
+    "umur_28": {
+      "initial": {
+        "min": 26.6,
+        "max": 28.8
+      },
+      "mean": 27.3,
+      "same_docket_adjust_up": {
+        "min": -1.0,
+        "max": 1.0
+      },
+      "same_docket_adjust_down": {
+        "min": 1.0,
+        "max": -1.0
+      },
+      "diff_docket_adjust_up": {
+        "min": -1.0,
+        "max": 1.0
+      },
+      "diff_docket_adjust_down": {
+        "min": 1.0,
+        "max": -1.0
+      },
+      "range_min": 26.6,
+      "range_max": 28.8
+    }
+  },
   "Class A-2": {
     "umur_7": {
       "min": 360.12,
@@ -90,6 +152,161 @@
       },
       "range_min": 500.0,
       "range_max": 650.0
+    }
+  },
+  "Class C": {
+    "umur_7": {
+      "min": 230.12,
+      "max": 255.34
+    },
+    "umur_28": {
+      "initial": {
+        "min": 365.0,
+        "max": 475.0
+      },
+      "mean": 420.0,
+      "same_docket_adjust_up": {
+        "min": -10.0,
+        "max": -3.0
+      },
+      "same_docket_adjust_down": {
+        "min": 3.0,
+        "max": 10.0
+      },
+      "diff_docket_adjust_up": {
+        "min": -89.0,
+        "max": -76.0
+      },
+      "diff_docket_adjust_down": {
+        "min": 66.0,
+        "max": 75.0
+      },
+      "range_min": 365.0,
+      "range_max": 475.0
+    }
+  },
+  "Class D-1": {
+    "umur_7": {
+      "min": 165.12,
+      "max": 215.34
+    },
+    "umur_28": {
+      "initial": {
+        "min": 290.0,
+        "max": 330.0
+      },
+      "mean": 310.0,
+      "same_docket_adjust_up": {
+        "min": 3.0,
+        "max": 25.0
+      },
+      "same_docket_adjust_down": {
+        "min": -3.0,
+        "max": -25.0
+      },
+      "diff_docket_adjust_up": {
+        "min": 5.0,
+        "max": 28.0
+      },
+      "diff_docket_adjust_down": {
+        "min": -5.0,
+        "max": -28.0
+      },
+      "range_min": 290.0,
+      "range_max": 330.0
+    }
+  },
+  "Class E-1": {
+    "umur_7": {
+      "min": 120.12,
+      "max": 165.34
+    },
+    "umur_28": {
+      "initial": {
+        "min": 200.0,
+        "max": 280.0
+      },
+      "mean": 240.0,
+      "same_docket_adjust_up": {
+        "min": 3.0,
+        "max": 11.0
+      },
+      "same_docket_adjust_down": {
+        "min": -3.0,
+        "max": -11.0
+      },
+      "diff_docket_adjust_up": {
+        "min": 11.0,
+        "max": 25.0
+      },
+      "diff_docket_adjust_down": {
+        "min": -11.0,
+        "max": -25.0
+      },
+      "range_min": 200.0,
+      "range_max": 280.0
+    }
+  },
+  "Fc-30": {
+    "umur_7": {
+      "min": 360.12,
+      "max": 420.34
+    },
+    "umur_28": {
+      "initial": {
+        "min": 500,
+        "max": 630
+      },
+      "mean": 565,
+      "same_docket_adjust_up": {
+        "min": 5,
+        "max": 15
+      },
+      "same_docket_adjust_down": {
+        "min": -18,
+        "max": -6
+      },
+      "diff_docket_adjust_up": {
+        "min": 55,
+        "max": 70
+      },
+      "diff_docket_adjust_down": {
+        "min": -60,
+        "max": -40
+      },
+      "range_min": 500,
+      "range_max": 650
+    }
+  },
+  "Fc-25": {
+    "umur_7": {
+      "min": 290.12,
+      "max": 360.34
+    },
+    "umur_28": {
+      "initial": {
+        "min": 430,
+        "max": 500
+      },
+      "mean": 465,
+      "same_docket_adjust_up": {
+        "min": 3,
+        "max": 29
+      },
+      "same_docket_adjust_down": {
+        "min": -29,
+        "max": -3
+      },
+      "diff_docket_adjust_up": {
+        "min": 20,
+        "max": 34
+      },
+      "diff_docket_adjust_down": {
+        "min": -34,
+        "max": -20
+      },
+      "range_min": 430,
+      "range_max": 500
     }
   },
   "K-500": {
@@ -247,97 +464,66 @@
       "range_max": 474
     }
   },
-  "Fc-30": {
+  "K-100": {
     "umur_7": {
-      "min": 360.12,
-      "max": 420.34
+      "min": 0.0,
+      "max": 0.0
     },
     "umur_28": {
       "initial": {
-        "min": 500,
-        "max": 630
+        "min": 0.0,
+        "max": 0.0
       },
-      "mean": 565,
+      "mean": 0.0,
       "same_docket_adjust_up": {
-        "min": 5,
-        "max": 15
+        "min": 0.0,
+        "max": 0.0
       },
       "same_docket_adjust_down": {
-        "min": -18,
-        "max": -6
+        "min": 0.0,
+        "max": 0.0
       },
       "diff_docket_adjust_up": {
-        "min": 55,
-        "max": 70
+        "min": 0.0,
+        "max": 0.0
       },
       "diff_docket_adjust_down": {
-        "min": -60,
-        "max": -40
+        "min": 0.0,
+        "max": 0.0
       },
-      "range_min": 500,
-      "range_max": 650
+      "range_min": 0.0,
+      "range_max": 0.0
     }
   },
-  "Fc-25": {
+  "CTB 3": {
     "umur_7": {
-      "min": 290.12,
-      "max": 360.34
+      "min": 83.45,
+      "max": 92.67
     },
     "umur_28": {
       "initial": {
-        "min": 430,
-        "max": 500
+        "min": 0.0,
+        "max": 0.0
       },
-      "mean": 465,
+      "mean": 0.0,
       "same_docket_adjust_up": {
-        "min": 3,
-        "max": 29
+        "min": 0.0,
+        "max": 0.0
       },
       "same_docket_adjust_down": {
-        "min": -29,
-        "max": -3
+        "min": 0.0,
+        "max": 0.0
       },
       "diff_docket_adjust_up": {
-        "min": 20,
-        "max": 34
+        "min": 0.0,
+        "max": 0.0
       },
       "diff_docket_adjust_down": {
-        "min": -34,
-        "max": -20
+        "min": 0.0,
+        "max": 0.0
       },
-      "range_min": 430,
-      "range_max": 500
-    }
-  },
-  "Class C": {
-    "umur_7": {
-      "min": 230.12,
-      "max": 255.34
-    },
-    "umur_28": {
-      "initial": {
-        "min": 365.0,
-        "max": 475.0
-      },
-      "mean": 420.0,
-      "same_docket_adjust_up": {
-        "min": -10.0,
-        "max": -3.0
-      },
-      "same_docket_adjust_down": {
-        "min": 3.0,
-        "max": 10.0
-      },
-      "diff_docket_adjust_up": {
-        "min": -89.0,
-        "max": -76.0
-      },
-      "diff_docket_adjust_down": {
-        "min": 66.0,
-        "max": 75.0
-      },
-      "range_min": 365.0,
-      "range_max": 475.0
+      "range_min": 0.0,
+      "range_max": 0.0
     }
   }
 }

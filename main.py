@@ -7,6 +7,11 @@ import atexit
 # Add the current directory to sys.path to ensure modules can be imported
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# First-run setup for executable distribution
+if getattr(sys, 'frozen', False):
+    from modules.first_run_setup import run_first_time_setup
+    run_first_time_setup()
+
 from modules.logging_config import setup_logging
 
 # Setup logging

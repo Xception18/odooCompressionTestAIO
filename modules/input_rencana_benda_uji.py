@@ -220,9 +220,17 @@ def fill_docket_form(driver: BrowserWrapper, row_data=None):
 def data_to_input(driver: BrowserWrapper, no_urut, row_data, is_first_row=False, stop_event=None):
     """Input data to the table row using Excel data with robust selectors"""
     page = driver.page
-    rencana_umur_test = "7" if no_urut in [1, 2] else "28"
     kode_benda_uji = str(row_data.iloc[2]) if len(row_data) > 2 else f" Isi Kode Benda Uji - {no_urut}"
     _mutu_benda_uji = str(row_data.iloc[5]) if len(row_data) > 5 else ""
+    
+    # Determine rencana_umur_test based on conditions
+    if "CTB" in _mutu_benda_uji:
+        rencana_umur_test = "7"
+    elif "FT 14D" in kode_benda_uji:
+        rencana_umur_test = "7" if no_urut in [1, 2] else "14"
+    else:
+        rencana_umur_test = "7" if no_urut in [1, 2] else "28"
+    
     bentuk_benda_uji = "Beam 15 x 15 x 60 cm" if any(m in _mutu_benda_uji for m in ["Fs-35", "Fs-38", "Fs-41", "Fs-45"]) else "Silinder 15 x 30 cm"
     logger.info(f"Input Row {no_urut} on data table...")
     time.sleep(1)
@@ -326,6 +334,7 @@ def add_table_rows(driver: BrowserWrapper, row_data=None, stop_event=None):
             if stop_event and stop_event.is_set():
                 return
             logger.info(f"Adding new row {no_urut}...")
+            time.sleep(1)
             add_item_link.click()
             time.sleep(1)
             data_to_input(driver, no_urut, row_data, is_first_row=False, stop_event=stop_event)

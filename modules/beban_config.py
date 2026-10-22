@@ -61,15 +61,16 @@ class BebanConfig:
         """Get list of all configured mutu names"""
         return list(self.config.keys())
     
-    def add_mutu(self, mutu_name: str, config: Dict) -> None:
+    def add_mutu(self, mutu_name: str, config: Dict) -> bool:
         """Add or update mutu configuration"""
         self.config[mutu_name] = config
+        return self.save()
     
     def delete_mutu(self, mutu_name: str) -> bool:
         """Delete mutu configuration"""
         if mutu_name in self.config:
             del self.config[mutu_name]
-            return True
+            return self.save()
         return False
 
 # Global instance
