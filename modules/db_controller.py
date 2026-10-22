@@ -215,7 +215,7 @@ def queryGrid(parList):
             cursor = conn.connection.cursor()
             
             SQL = """SELECT idpengujian, tgluji, nodocket, nourutbenda, bujnama, 
-                            umur, nilaikn, bemanmpa, kuattekan, beratbenda, tiperetak, sinkron 
+                            umur, nilaikn, bebanmpa, kuattekan, beratbenda, tiperetak, sinkron 
                      FROM pengujian
                      WHERE (tgluji BETWEEN %s AND %s) AND sinkron LIKE %s
                      ORDER BY idpengujian ASC"""

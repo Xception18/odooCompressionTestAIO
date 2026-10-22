@@ -1,5 +1,6 @@
 # Core GUI Framework
 customtkinter==6.0.0
+Pillow>=10.0.0
 
 
 # Data Processing

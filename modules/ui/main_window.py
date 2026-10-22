@@ -403,6 +403,16 @@ class ExcelProcessorGUI:
         )
         self.grid_btn.pack(side='left', padx=5)
         
+        self.beban_config_btn = ctk.CTkButton(
+            button_row3, 
+            text="⚙️ Beban Config Editor", 
+            command=self.open_beban_config_editor,
+            width=180,
+            height=40,
+            font=ctk.CTkFont(size=12, weight="bold"),
+        )
+        self.beban_config_btn.pack(side='left', padx=5)
+        
         # Sync button (separate)
         sync_frame = ctk.CTkFrame(main_frame)
         sync_frame.pack(fill="x", padx=10, pady=10)
@@ -778,6 +788,26 @@ class ExcelProcessorGUI:
                 self.logger.error(f"Failed to launch Grid Benda Uji: {e}")
                 self.logger.error(traceback.format_exc())
             messagebox.showerror("Error", f"Failed to launch Grid Benda Uji:\n{str(e)}")
+    
+    def open_beban_config_editor(self):
+        """Open Beban Configuration Editor window"""
+        try:
+            from modules.ui.beban_config_editor import open_config_editor
+            
+            if self.logger:
+                self.logger.info("Opening Beban Configuration Editor...")
+            
+            open_config_editor(self.root)
+            
+            if self.logger:
+                self.logger.info("Beban Configuration Editor closed")
+                
+        except Exception as e:
+            error_msg = f"Failed to open Beban Config Editor: {str(e)}"
+            if self.logger:
+                self.logger.error(error_msg)
+                self.logger.error(traceback.format_exc())
+            messagebox.showerror("Error", error_msg)
 
     def setup_logging(self):
         """Attach GUI queue handler to root logger so all module loggers appear in GUI."""

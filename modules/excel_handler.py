@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.workbook.workbook import Workbook
+from modules.beban_config import get_beban_config
 
 logger = logging.getLogger(__name__)
 
@@ -70,18 +71,23 @@ class ExcelBebanProcessor:
     berdasarkan MUTU, KODE_BENDA_UJI, UMUR, dan DOCKET
     """
     
-    def __init__(self, file_path: str, sheet_name: str = 'ODOO'):
+    def __init__(self, file_path: str, sheet_name: str = 'ODOO', use_config: bool = True):
         """
         Inisialisasi processor
         
         Args:
             file_path: Path ke file Excel
             sheet_name: Nama sheet yang akan diproses (default: 'ODOO')
+            use_config: Use JSON config file (True) or hardcoded logic (False)
         """
         self.file_path = file_path
         self.sheet_name = sheet_name
         self.workbook: Optional[Workbook] = None
         self.sheet: Optional[Worksheet] = None
+        self.use_config = use_config
+        
+        # Load config if enabled
+        self.config_manager = get_beban_config() if use_config else None
         
         # Tracking untuk logika umur 28
         self.previous_docket: Optional[str] = None
@@ -151,6 +157,20 @@ class ExcelBebanProcessor:
         umur = self.get_cell_value(row_index, 'UMUR')
         docket = self.get_cell_value(row_index, 'DOCKET')
         kontraktor = self.get_cell_value(row_index, 'KONTRAKTOR')
+        
+        # Try config-driven approach first
+        if self.use_config and self.config_manager:
+            mutu_config = self.config_manager.get_mutu_config(mutu)
+            if mutu_config:
+                from modules.excel_handler_config import calculate_beban_from_config
+                result, new_docket, new_beban = calculate_beban_from_config(
+                    mutu, umur, docket, kontraktor, mutu_config,
+                    self.previous_docket, self.previous_beban, self.previous_mutu
+                )
+                self.previous_docket = new_docket
+                self.previous_beban = new_beban
+                self.previous_mutu = mutu
+                return result
 
         if "Class A-2" in mutu:
         # Logika perhitungan berdasarkan UMUR
@@ -232,49 +252,6 @@ class ExcelBebanProcessor:
                 else:
                     # Fallback (seharusnya tidak terjadi)
                     new_beban = random.uniform(580, 700)
-                # Update tracking variables
-                self.previous_docket = str(docket) if docket is not None else None
-                self.previous_beban = new_beban
-                
-                return f"{new_beban:.2f}"
-            else:
-                # Umur selain 7 atau 28
-                return "0.00"
-
-        elif "Class B-1" in mutu:
-        # Logika perhitungan berdasarkan UMUR
-            if umur == 7:
-                random_beban = random.uniform(360.12, 420.34)
-                return f"{random_beban:.2f}"        
-            elif umur == 28:
-                # Umur 28 hari dengan logika khusus
-                # Skenario 1: Kondisi awal (docket & beban sebelumnya = 0.0 atau None)
-                if (self.previous_docket is None or self.previous_docket == 0.0 or 
-                    self.previous_beban is None or self.previous_beban == 0.0):
-                    new_beban = random.uniform(500, 630)
-                
-                # Skenario 2: Docket sama & beban != 0
-                elif self.previous_docket == docket and self.previous_beban != None:
-                    mean = 565
-                    if self.previous_beban >= mean:
-                        adjustment = random.uniform(-18, -6)  # Turun
-                    else:
-                        adjustment = random.uniform(5, 15)  # Naik
-                    new_beban = max(500, min(self.previous_beban + adjustment, 650))
-                # Skenario 3: Docket berbeda & mutu sama
-                elif self.previous_docket != docket:
-                    mean = 565
-                    if self.previous_beban >= mean:
-                        adjustment = random.uniform(-60, -40)  # Turun signifikan
-                    else:
-                        adjustment = random.uniform(55, 70)  # Naik signifikan
-                    new_beban = self.previous_beban + adjustment
-                    # Pastikan tetap dalam range
-                    new_beban = max(500, min(new_beban, 650))
-                    
-                else:
-                    # Fallback (seharusnya tidak terjadi)
-                    new_beban = random.uniform(500, 630)
                 # Update tracking variables
                 self.previous_docket = str(docket) if docket is not None else None
                 self.previous_beban = new_beban

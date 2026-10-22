@@ -48,3 +48,18 @@ automation_log.txt
 bjdt_error_log.txt
 daemonSync.log
 aplikasiAlatUji.log
+
+# Excel test data and reports (sensitive business data)
+Data Input Pengujian/**/*.xlsx
+Rencana/Lap. Rencana Test/**
+!**/README.md
+
+# Legacy config files (replaced by .env)
+config.cnf
+
+# Web migration artifacts (generated during development)
+web-migration/backend/.venv/
+web-migration/backend/__pycache__/
+web-migration/frontend/node_modules/
+web-migration/frontend/dist/
+web-migration/frontend/.vite/
