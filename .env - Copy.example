@@ -1,0 +1,74 @@
+# ============================================================================
+# Database Configuration
+# ============================================================================
+# PostgreSQL connection settings
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=alatujidb
+DB_USER=postgres
+DB_PASSWORD=
+
+# Database connection pool settings (optional, has defaults)
+DB_POOL_SIZE=5
+DB_POOL_OVERFLOW=10
+DB_CONNECT_TIMEOUT=10
+DB_STATEMENT_TIMEOUT=30
+
+# ============================================================================
+# Web Automation Authentication
+# ============================================================================
+# Choose ONE method: Token-based (recommended) OR Form-based (legacy)
+
+# --- Method 1: Token-Based Authentication (RECOMMENDED) ---
+# Faster startup (~5-7s improvement), more secure, no password in memory
+# 
+# How to get SESSION_TOKEN:
+# 1. Login to https://rmc.adhimix.web.id/ in Chrome
+# 2. Press F12 → Application tab → Cookies → https://rmc.adhimix.web.id
+# 3. Copy the value of 'session_id' cookie
+# 4. Paste below (token typically valid 7-30 days)
+SESSION_TOKEN=
+
+# --- Method 2: Form-Based Authentication (FALLBACK) ---
+# Used only if SESSION_TOKEN is not set
+# Slower startup (form interaction required)
+SELENIUM_URL=https://rmc.adhimix.web.id/web/login
+SELENIUM_USER=
+SELENIUM_PASSWORD=
+
+# ============================================================================
+# Application Configuration
+# ============================================================================
+
+# Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL=INFO
+
+# Environment: development, staging, production
+ENVIRONMENT=development
+
+# ============================================================================
+# Optional Settings (Advanced)
+# ============================================================================
+
+# JWT secret key (for future web API authentication)
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+# SECRET_KEY=
+
+# Allowed CORS origins (comma-separated, for web version)
+# ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# ============================================================================
+# Notes
+# ============================================================================
+# 
+# - NEVER commit this file with real credentials to version control
+# - Copy this file to `.env` and fill in your actual values
+# - The application reads `.env` automatically via python-dotenv
+# - Environment variables override .env file values
+# - See README.md for detailed setup instructions
+# 
+# Quick Start:
+# 1. cp .env.example .env
+# 2. Edit .env with your credentials
+# 3. python main.py

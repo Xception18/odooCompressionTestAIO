@@ -948,7 +948,7 @@ class ExcelProcessorGUI:
 
     def setup_logging(self):
         """Attach GUI queue handler to root logger so all module loggers appear in GUI."""
-        setup_logging(log_file="aplikasiAlatUji.log")
+        # Logging already setup in main.py — just attach GUI queue handler
         self.logger = logging.getLogger('ExcelProcessor')
         self.logger.setLevel(logging.INFO)
 
@@ -1065,8 +1065,17 @@ class ExcelProcessorGUI:
 
             # Step 3: Generate CSV files
             self.logger.info("=== Starting CSV Generation ===")
-            self.generate_csv_files()
-            messagebox.showinfo("Success", "Generate CSV files separated by date successfully!")
+            # Ask in main thread, then call logic in this worker thread
+            result = {'choice': None}
+            def ask_dialog():
+                result['choice'] = messagebox.askyesno("Group by Date", "Group by date the output?")
+            self.root.after(0, ask_dialog)
+            # Wait for dialog response
+            import time
+            while result['choice'] is None:
+                time.sleep(0.1)
+            self._generate_csv_files_logic(result['choice'])
+            messagebox.showinfo("Success", "CSV files generated successfully!")
 
             # Step 4: Upload to database
             self.logger.info("=== Starting Database Upload ===")
@@ -1119,19 +1128,15 @@ class ExcelProcessorGUI:
             self.enable_buttons()
 
     def generate_csv_files(self):
-        # This calls the actual logic which we will implement next
-        # But for the button command, we might want to run it in thread if it takes long
-        # The original code had generate_csv_files doing the work directly or via thread?
-        # Original code: command=self.generate_csv_files
-        # And generate_csv_files did the work.
-        # Let's keep it simple and run in thread to avoid freezing UI
-        threading.Thread(target=self._generate_csv_files_thread, daemon=True).start()
+        # Show dialog - must be in main thread
+        group_by_date = messagebox.askyesno("Group by Date", "Group by date the output?")
+        threading.Thread(target=self._generate_csv_files_thread, args=(group_by_date,), daemon=True).start()
 
-    def _generate_csv_files_thread(self):
+    def _generate_csv_files_thread(self, group_by_date):
         self.disable_buttons()
         try:
             self.update_status("Generating CSV files...")
-            self._generate_csv_files_logic()
+            self._generate_csv_files_logic(group_by_date)
             self.update_status("CSV generation completed!")
         except Exception as e:
             self.logger.error(f"Error generating CSV: {str(e)}")
@@ -1251,7 +1256,7 @@ class ExcelProcessorGUI:
         csv_files = glob.glob(os.path.join(self.output_dir.get(), "*.csv"))
         if csv_files:
             latest_csv = max(csv_files, key=os.path.getctime)
-            df_latest = pd.read_csv(latest_csv, sep=';', encoding='utf-8-sig')
+            df_latest = pd.read_csv(latest_csv, sep=';', decimal=',', encoding='utf-8-sig')
             if 'idpengujian' in df_latest.columns and not df_latest['idpengujian'].empty:
                 last_id = pd.to_numeric(df_latest['idpengujian'], errors='coerce').dropna().astype(int).max()
                 next_id = last_id + 1
@@ -1357,8 +1362,8 @@ class ExcelProcessorGUI:
 
         self.logger.info("BJDT ID process completed")
 
-    def _generate_csv_files_logic(self):
-        """Generate CSV files separated by date"""
+    def _generate_csv_files_logic(self, group_by_date):
+        """Generate CSV files separated by date or single file"""
         # Calculate formulas
         with xw.App(visible=False) as app:
             wb = app.books.open(self.file_excel_2.get())
@@ -1369,16 +1374,32 @@ class ExcelProcessorGUI:
         # Read Excel file
         df = pd.read_excel(self.file_excel_2.get(), sheet_name=self.nama_sheet_3.get(), engine='openpyxl')
 
+        # Filter out rows where columns 4, 5, 6 (Excel D, E, F = pandas index 3, 4, 5) are all 0
+        df = df[~((df.iloc[:, 3] == 0) & (df.iloc[:, 4] == 0) & (df.iloc[:, 5] == 0))]
+
         # Convert date column to datetime
         df['tglrencanauji'] = pd.to_datetime(df['tglrencanauji'], errors='coerce')
 
         # Create output directory
         os.makedirs(self.output_dir.get(), exist_ok=True)
 
-        # Group by date and save as CSV
-        for tgl, group in df.groupby(df['tglrencanauji'].dt.date):
-            output_filename = os.path.join(self.output_dir.get(), f"{tgl}.csv")
-            group.to_csv(output_filename, index=False, sep=';', encoding='utf-8-sig')
+        if group_by_date:
+            # Group by date and save as CSV
+            for tgl, group in df.groupby(df['tglrencanauji'].dt.date):
+                output_filename = os.path.join(self.output_dir.get(), f"{tgl}.csv")
+                group.to_csv(output_filename, index=False, sep=';', decimal=',', encoding='utf-8-sig')
+                self.logger.info(f"Saved: {output_filename}")
+        else:
+            # Single file with date range
+            dates = df['tglrencanauji'].dt.date.dropna()
+            if not dates.empty:
+                min_date = dates.min()
+                max_date = dates.max()
+                filename = f"{min_date} - {max_date}.csv"
+            else:
+                filename = "output.csv"
+            output_filename = os.path.join(self.output_dir.get(), filename)
+            df.to_csv(output_filename, index=False, sep=';', decimal=',', encoding='utf-8-sig')
             self.logger.info(f"Saved: {output_filename}")
         # Clear ODOO sheet
         wb = openpyxl.load_workbook(self.file_excel_2.get())
@@ -1413,7 +1434,7 @@ class ExcelProcessorGUI:
         engine = create_engine(f'postgresql+psycopg2://{self.db_user.get()}:{self.db_password.get()}@{self.db_host.get()}:{self.db_port.get()}/{self.db_name.get()}')
 
         # Read CSV
-        df = pd.read_csv(csv_file, delimiter=';')
+        df = pd.read_csv(csv_file, delimiter=';', decimal=',')
         self.logger.info(f"Number of rows to upload: {len(df)}")
 
         # Upload to PostgreSQL
@@ -1450,9 +1471,8 @@ class ExcelProcessorGUI:
 
         # Create database connection
         engine = create_engine(f'postgresql+psycopg2://{self.db_user.get()}:{self.db_password.get()}@{self.db_host.get()}:{self.db_port.get()}/{self.db_name.get()}')
-
         # Read CSV
-        df = pd.read_csv(csv_file, delimiter=';')
+        df = pd.read_csv(csv_file, delimiter=';', decimal=',')
         self.logger.info(f"Number of rows to upload: {len(df)}")
 
         # Upload to PostgreSQL
@@ -1612,7 +1632,9 @@ class ExcelProcessorGUI:
         try:
             engine = create_engine(f'postgresql+psycopg2://{self.db_user.get()}:{self.db_password.get()}@{self.db_host.get()}:{self.db_port.get()}/{self.db_name.get()}')
             connection = engine.connect()
+            self.logger.info("Database connection successful")
             connection.close()
             messagebox.showinfo("Success", "Database connection successful!")
         except Exception as e:
+            self.logger.error(f"Database connection failed: {str(e)}")
             messagebox.showerror("Error", f"Database connection failed: {str(e)}")

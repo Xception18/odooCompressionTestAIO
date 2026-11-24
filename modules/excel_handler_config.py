@@ -20,7 +20,7 @@ def calculate_beban_from_config(
     """
     
     if umur not in [7, 28]:
-        return "0.00", previous_docket, previous_beban
+        return "0,00", previous_docket, previous_beban
     
     # Umur 7 - simple range
     if umur == 7:
@@ -29,15 +29,15 @@ def calculate_beban_from_config(
         max_val = u7_config.get("max", 0)
         
         if min_val == 0 and max_val == 0:
-            return "0.00", previous_docket, previous_beban
+            return "0,00", previous_docket, previous_beban
         
         random_beban = random.uniform(min_val, max_val)
-        return f"{random_beban:.2f}", previous_docket, previous_beban
+        return f"{random_beban:.2f}".replace('.', ','), previous_docket, previous_beban
     
     # Umur 28 - complex logic
     u28_config = config.get("umur_28", {})
     if not u28_config:
-        return "0.00", previous_docket, previous_beban
+        return "0,00", previous_docket, previous_beban
     
     initial = u28_config.get("initial", {})
     mean = u28_config.get("mean", 0)
@@ -84,4 +84,4 @@ def calculate_beban_from_config(
     updated_docket = str(docket) if docket is not None else None
     updated_beban = new_beban
     
-    return f"{new_beban:.2f}", updated_docket, updated_beban
+    return f"{new_beban:.2f}".replace('.', ','), updated_docket, updated_beban

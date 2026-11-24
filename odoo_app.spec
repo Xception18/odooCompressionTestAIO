@@ -7,18 +7,21 @@ added_files = [
     ('database_schema.sql', '.'),
     ('.env.example', '.'),
     ('README.md', '.'),
+    ('INSTALL_PLAN.md', '.'),
 ]
 
 # Include Excel templates
 import os
-if os.path.exists('Data Input Pengujian/data.xlsx'):
-    added_files.append(('Data Input Pengujian/data.xlsx', 'Data Input Pengujian'))
-if os.path.exists('Pengujian/PENGUJIAN.xlsx'):
-    added_files.append(('Pengujian/PENGUJIAN.xlsx', 'Pengujian'))
-if os.path.exists('Rencana/RENCANA.xlsx'):
-    added_files.append(('Rencana/RENCANA.xlsx', 'Rencana'))
+for folder, filename in [
+    ('Data Input Pengujian', 'data.xlsx'),
+    ('Pengujian', 'PENGUJIAN.xlsx'),
+    ('Rencana', 'RENCANA.xlsx'),
+]:
+    path = os.path.join(folder, filename)
+    if os.path.exists(path):
+        added_files.append((path, folder))
 
-# Include chromedriver if exists
+# Include chromedriver if exists (Selenium fallback)
 if os.path.exists('chromedriver.exe'):
     added_files.append(('chromedriver.exe', '.'))
 
@@ -27,15 +30,27 @@ hidden_imports = [
     'customtkinter',
     'PIL._tkinter_finder',
     'playwright.sync_api',
+    'playwright._impl',
+    'playwright._impl._driver',
     'selenium.webdriver.chrome.service',
     'psycopg2',
+    'psycopg2._psycopg',
     'openpyxl',
     'pandas',
+    'pandas._libs',
     'xlwings',
     'sqlalchemy.dialects.postgresql',
+    'sqlalchemy.dialects.postgresql.psycopg2',
     'sqlalchemy.pool',
     'dotenv',
     'requests',
+    'json',
+    'modules.beban_config',
+    'modules.excel_handler_config',
+    'modules.first_run_setup',
+    'modules.shutdown_manager',
+    'modules.db_pool',
+    'modules.daemon_sync',
 ]
 
 a = Analysis(
@@ -47,14 +62,28 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['pytest', 'pytest-cov', 'pytest-mock', 'pytest-asyncio', 'tkinter.test'],
+    excludes=[
+        'pytest', 'pytest-cov', 'pytest-mock', 'pytest-asyncio',
+        'tkinter.test', 'unittest', 'test',
+	# Exclude large unused ML/CV packages
+        'torch', 'torchvision', 'torchaudio',
+        'tensorflow', 'keras',
+        'cv2', 'opencv',
+        'scipy', 'scipy.stats', 'scipy.optimize',
+        'sklearn', 'scikit-learn',
+        'transformers', 'tokenizers',
+        'onnx', 'onnxruntime',
+        'numba', 'llvmlite',
+        'av', 'ffmpeg',
+        'pyarrow',
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-# Include modules directory
+# Include modules directory (catch-all)
 a.datas += Tree('modules', prefix='modules', excludes=['__pycache__', '*.pyc'])
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
@@ -69,13 +98,13 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # Set to True for debugging
+    console=False,  # Hide console in production
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    # icon='icon.ico',  # Uncomment if you have an icon
+    # icon='icon.ico',
 )
 
 coll = COLLECT(

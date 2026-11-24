@@ -6,10 +6,9 @@ import os
 import sys
 import queue
 
-import psycopg2
 import requests
 
-from modules.config import EnvironmentConfig
+from modules.db_pool import get_db_pool
 
 # Global logger variable for the daemon
 daemon_logger = None
@@ -317,34 +316,28 @@ def cekData():
     logger = get_daemon_logger()
     try:
         logger.debug("Memulai proses cekData()")
-        config = EnvironmentConfig()
         
-        datab = config.get_db_name()
-        hosted = config.get_db_host()
-        login = config.get_db_user()
-        passed = config.get_db_password()
+        pool = get_db_pool()
+        rows = pool.execute_query(
+            "SELECT tgluji, nilaikn, beratbenda, tiperetak, idbendauji, "
+            "nodocket, nourutbenda, sinkron, bebanmpa, kuattekan, umur "
+            "FROM pengujian WHERE sinkron = 'B' LIMIT 1"
+        )
         
-        conn = f"dbname={datab} user={login} host={hosted} password={passed}"
-        logger.debug(f"Koneksi database: host={hosted}, database={datab}, user={login}")
+        if rows:
+            # Convert dict row to tuple for backward compatibility
+            row = rows[0]
+            daftar = (
+                row['tgluji'], row['nilaikn'], row['beratbenda'],
+                row['tiperetak'], row['idbendauji'], row['nodocket'],
+                row['nourutbenda'], row['sinkron'], row['bebanmpa'],
+                row['kuattekan'], row['umur'],
+            )
+            logger.debug(f"Data ditemukan: True")
+            return daftar
         
-        konekdb = psycopg2.connect(conn)
-        konekdb.autocommit = True
-        kursor = konekdb.cursor()
-        
-        SQL = """ SELECT tgluji, nilaikn, beratbenda, tiperetak, idbendauji, nodocket, nourutbenda, sinkron, bebanmpa, kuattekan, umur 
-                  FROM pengujian
-                  WHERE sinkron = 'B' 
-                  LIMIT 1; """
-        
-        logger.debug("Executing SQL query for cekData()")
-        kursor.execute(SQL)
-        daftar = kursor.fetchone()
-        
-        kursor.close()
-        konekdb.close()
-        
-        logger.debug(f"Data ditemukan: {daftar is not None}")
-        return daftar
+        logger.debug("Data ditemukan: False")
+        return None
         
     except Exception as e:
         logger.error(f"Error pada cekData(): {str(e)}")
@@ -366,29 +359,13 @@ def cekSinkronLokal(bjdt_id):
     try:
         logger.debug(f"Memulai proses cekSinkronLokal() untuk ID: {bjdt_id}")
         
-        config = EnvironmentConfig()
+        pool = get_db_pool()
+        rows = pool.execute_query(
+            "SELECT sinkron FROM pengujian WHERE idbendauji = :bjdt_id",
+            {"bjdt_id": bjdt_id}
+        )
         
-        datab = config.get_db_name()
-        hosted = config.get_db_host()
-        login = config.get_db_user()
-        passed = config.get_db_password()
-        
-        conn = f"dbname={datab} user={login} host={hosted} password={passed}"
-        konekdb = psycopg2.connect(conn)
-        konekdb.autocommit = True
-        kursor = konekdb.cursor()
-        
-        SQL = """ SELECT sinkron FROM pengujian WHERE idbendauji = %s ; """
-        data = (bjdt_id,)
-        
-        logger.debug(f"Executing cekSinkronLokal query for ID: {bjdt_id}")
-        kursor.execute(SQL, data)
-        daftar = kursor.fetchone()
-        
-        kursor.close()
-        konekdb.close()
-        
-        result = daftar[0] if daftar else None
+        result = rows[0]['sinkron'] if rows else None
         logger.debug(f"Status sinkron untuk ID {bjdt_id}: {result}")
         return result
         
@@ -410,27 +387,11 @@ def sinkUpdateLokal(nomer, urut):
     try:
         logger.debug(f"Memulai proses sinkUpdateLokal() untuk nomer: {nomer}, urut: {urut}")
         
-        config = EnvironmentConfig()
-        
-        datab = config.get_db_name()
-        hosted = config.get_db_host()
-        login = config.get_db_user()
-        passed = config.get_db_password()
-        
-        conn = f"dbname={datab} user={login} host={hosted} password={passed}"
-        konekdb = psycopg2.connect(conn)
-        konekdb.autocommit = True
-        kursor = konekdb.cursor()
-        
-        SQL = """ UPDATE pengujian SET sinkron = 'S' WHERE noDocket = %s AND noUrutBenda = %s; """
-        data = (nomer, urut)
-        
-        logger.debug(f"Executing update query for noDocket: {nomer}, noUrutBenda: {urut}")
-        kursor.execute(SQL, data)
-        
-        rows_affected = kursor.rowcount
-        kursor.close()
-        konekdb.close()
+        pool = get_db_pool()
+        rows_affected = pool.execute_update(
+            "UPDATE pengujian SET sinkron = 'S' WHERE noDocket = :nomer AND noUrutBenda = :urut",
+            {"nomer": nomer, "urut": urut}
+        )
         
         logger.info(f"Update berhasil ({rows_affected} rows) - noDocket: {nomer}, noUrutBenda: {urut}")
 

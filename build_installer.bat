@@ -18,7 +18,6 @@ REM Clean previous builds
 echo [1/5] Cleaning previous builds...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
-if exist output rmdir /s /q output
 echo [OK] Cleaned
 echo.
 
@@ -47,7 +46,7 @@ echo.
 
 REM Check Inno Setup
 echo [4/5] Checking Inno Setup...
-set INNO_PATH=C:\Program Files (x86)\Inno Setup 6\ISCC.exe
+set INNO_PATH=C:\Program Files\Inno Setup 7\ISCC.exe
 if not exist "%INNO_PATH%" (
     echo [ERROR] Inno Setup not found at: %INNO_PATH%
     echo.

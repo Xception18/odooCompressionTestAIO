@@ -1,26 +1,31 @@
 import datetime
 import logging
+import time
 import sys
 import os
-import time
-
-# Add project root to sys.path so we can import from modules
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # pyrefly: ignore [missing-import]
 import wx
 # pyrefly: ignore [missing-import]
 import wx.adv
 
-from modules import db_controller as dbctrl
-from modules.logging_config import setup_logging
-
-setup_logging(log_level=logging.DEBUG, log_file="grid_benda_uji.log")
+# Handle both standalone and module import
+if __name__ == '__main__':
+    # Standalone: add project root to path
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from modules import db_controller as dbctrl
+    from modules.logging_config import setup_logging
+    setup_logging(log_level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+else:
+    # Imported as module: use existing logger
+    from modules import db_controller as dbctrl
+    logger = logging.getLogger(__name__)
 
 
 class GridBendaUji(wx.Panel):
     def __init__(self, parent):
-        logging.info("Inisialisasi Aplikasi Pengendali Alat Penguji Tekanan")
+        logger.info("Inisialisasi Aplikasi Pengendali Alat Penguji Tekanan")
         wx.Panel.__init__(
             self,
             parent,
@@ -217,7 +222,7 @@ class GridBendaUji(wx.Panel):
                 date2 = datetime.datetime.strftime(date1, "%d/%m/%Y")
                 self.lstBendaUji.SetStringItem(index, 1, date2)
             except (ValueError, TypeError) as e:
-                logging.warning(f"Error parsing date {r[1]}: {e}")
+                logger.warning(f"Error parsing date {r[1]}: {e}")
                 self.lstBendaUji.SetStringItem(index, 1, str(r[1]))
             
             # Set data lainnya dengan error handling
@@ -234,7 +239,7 @@ class GridBendaUji(wx.Panel):
                 self.lstBendaUji.SetStringItem(index, 10, str(r[10]) if r[10] is not None else "")
                 self.lstBendaUji.SetStringItem(index, 11, str(r[11]) if r[11] is not None else "")
             except (IndexError, TypeError) as e:
-                logging.error(f"Error setting list item data: {e}")
+                logger.error(f"Error setting list item data: {e}")
                 continue
 
         if hasilCari:

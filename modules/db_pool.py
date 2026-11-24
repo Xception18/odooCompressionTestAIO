@@ -134,7 +134,7 @@ class DatabasePool:
             conn = self.get_connection()
             try:
                 result = conn.execute(text(query), params or {})
-                return [dict(row) for row in result.fetchall()]
+                return [dict(row._mapping) for row in result.fetchall()]
             finally:
                 conn.close()
         except Exception as e:

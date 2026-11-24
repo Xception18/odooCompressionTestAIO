@@ -9,13 +9,17 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # First-run setup for executable distribution
 if getattr(sys, 'frozen', False):
-    from modules.first_run_setup import run_first_time_setup
+    from modules.first_run_setup import run_first_time_setup, get_config_dir
     run_first_time_setup()
+    # Use AppData for log file when frozen
+    log_file = os.path.join(get_config_dir(), "aplikasiAlatUji.log")
+else:
+    log_file = "aplikasiAlatUji.log"
 
 from modules.logging_config import setup_logging
 
 # Setup logging
-setup_logging(log_file="aplikasiAlatUji.log")
+setup_logging(log_file=log_file)
 logger = logging.getLogger(__name__)
 
 from modules.ui.main_window import ExcelProcessorGUI

@@ -135,7 +135,7 @@ def simpan(bendaUji):
             SQL = """INSERT INTO pengujian(
                         tgluji, idalat, kodebendaUji, nodocket, nourutbenda, 
                         nilaikn, beratbenda, tiperetak, sinkron, idbendauji, 
-                        tglrencanauji, bujnama, kuattekan, bemanmpa, umur, tglbendauji)
+                        tglrencanauji, bujnama, kuattekan, bebanmpa, umur, tglbendauji)
                      VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
             
             cursor.execute(SQL, data)
